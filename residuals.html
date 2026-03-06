@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Residuals Import</title>
+  <style>
+    body{font-family: Arial; background:#f4f6f9; padding:40px;}
+    h2{color:#333;}
+    input, button{padding:10px; margin:10px 0;}
+    table{width:100%; border-collapse:collapse; background:white; border-radius:6px; overflow:hidden;}
+    th, td{padding:10px; border:1px solid #ddd;}
+    th{background:#0073aa; color:white;}
+    button{background:#0073aa; color:white; border:none; border-radius:5px; cursor:pointer;}
+    button:hover{background:#005fd1;}
+  </style>
+</head>
+<body>
+  <h2>Import Residuals</h2>
+  <input type="file" id="file-input" accept=".csv">
+  <button onclick="loadCSV()">Upload</button>
+
+  <table>
+    <thead>
+      <tr><th>Date</th><th>Transaction</th><th>Amount</th></tr>
+    </thead>
+    <tbody id="residuals-table"></tbody>
+  </table>
+
+<script>
+function loadCSV(){
+  const file = document.getElementById("file-input").files[0];
+  if(!file){ alert("Please select a CSV file"); return; }
+
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const text = e.target.result;
+    const rows = text.trim().split("\n");
+    const table = document.getElementById("residuals-table");
+    table.innerHTML=""; // clear existing rows
+
+    rows.forEach((row,i)=>{
+      const cols = row.split(",");
+      if(i===0) return; // skip header row if CSV has headers
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${cols[0]}</td><td>${cols[1]}</td><td>${cols[2]}</td>`;
+      table.appendChild(tr);
+    });
+  }
+  reader.readAsText(file);
+}
+</script>
+</body>
+</html>
