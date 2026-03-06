@@ -6,24 +6,35 @@
     body{font-family: Arial; background:#f4f6f9; padding:40px;}
     h2{color:#333;}
     input, button{padding:10px; margin:10px 0;}
-    table{width:100%; border-collapse:collapse; background:white; border-radius:6px; overflow:hidden;}
+    table{width:100%; border-collapse:collapse; background:white; border-radius:6px; overflow:hidden; margin-top:20px;}
     th, td{padding:10px; border:1px solid #ddd;}
     th{background:#0073aa; color:white;}
     button{background:#0073aa; color:white; border:none; border-radius:5px; cursor:pointer;}
     button:hover{background:#005fd1;}
+    .nav a{margin-right:10px; padding:8px 15px; background:#0073aa; color:white; border-radius:5px; text-decoration:none;}
+    .nav a.logout{background:#d00;}
   </style>
 </head>
 <body>
-  <h2>Import Residuals</h2>
-  <input type="file" id="file-input" accept=".csv">
-  <button onclick="loadCSV()">Upload</button>
 
-  <table>
-    <thead>
-      <tr><th>Date</th><th>Transaction</th><th>Amount</th></tr>
-    </thead>
-    <tbody id="residuals-table"></tbody>
-  </table>
+<!-- Navigation -->
+<div class="nav">
+  <a href="dashboard.html">Dashboard</a>
+  <a href="residuals.html">Residuals</a>
+  <a href="sales-reps.html">Sales Reps</a>
+  <a href="index.html" class="logout">Logout</a>
+</div>
+
+<h2>Import Residuals</h2>
+<input type="file" id="file-input" accept=".csv">
+<button onclick="loadCSV()">Upload</button>
+
+<table>
+  <thead>
+    <tr><th>Date</th><th>Transaction</th><th>Amount</th></tr>
+  </thead>
+  <tbody id="residuals-table"></tbody>
+</table>
 
 <script>
 function loadCSV(){
@@ -35,11 +46,11 @@ function loadCSV(){
     const text = e.target.result;
     const rows = text.trim().split("\n");
     const table = document.getElementById("residuals-table");
-    table.innerHTML=""; // clear existing rows
+    table.innerHTML=""; // clear previous rows
 
     rows.forEach((row,i)=>{
       const cols = row.split(",");
-      if(i===0) return; // skip header row if CSV has headers
+      if(i===0) return; // skip header row
       const tr = document.createElement("tr");
       tr.innerHTML = `<td>${cols[0]}</td><td>${cols[1]}</td><td>${cols[2]}</td>`;
       table.appendChild(tr);
