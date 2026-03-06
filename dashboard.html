@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Residual Dashboard</title>
+  <style>
+    body{font-family: Arial; background:#f4f6f9; padding:40px;}
+    h2{color:#333;}
+    table{width:100%; border-collapse:collapse; background:white; border-radius:6px; overflow:hidden;}
+    th, td{padding:10px; border:1px solid #ddd;}
+    th{background:#0073aa; color:white;}
+    input, button{padding:8px; margin:5px 0;}
+    button{background:#0073aa; color:white; border:none; border-radius:5px; cursor:pointer;}
+  </style>
+</head>
+<body>
+  <h2>Agents & Rep Codes</h2>
+
+  <input type="text" id="agent-name" placeholder="Agent Name">
+  <input type="text" id="rep-code" placeholder="Rep Code">
+  <input type="number" id="split-percent" placeholder="Residual Split %">
+  <button onclick="addAgent()">Add Agent</button>
+
+  <table>
+    <thead>
+      <tr><th>Agent Name</th><th>Rep Code</th><th>Residual Split</th><th>Action</th></tr>
+    </thead>
+    <tbody id="agents-table"></tbody>
+  </table>
+
+  <script>
+    function addAgent(){
+      var name = document.getElementById("agent-name").value;
+      var code = document.getElementById("rep-code").value;
+      var split = document.getElementById("split-percent").value;
+
+      if(!name || !code || !split){
+        alert("Fill all fields");
+        return;
+      }
+
+      var tbody = document.getElementById("agents-table");
+      var row = tbody.insertRow();
+      row.innerHTML = `<td>${name}</td><td>${code}</td><td>${split}</td><td><button onclick="this.closest('tr').remove()">Delete</button></td>`;
+      document.getElementById("agent-name").value="";
+      document.getElementById("rep-code").value="";
+      document.getElementById("split-percent").value="";
+    }
+  </script>
+</body>
+</html>
