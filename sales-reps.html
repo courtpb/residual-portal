@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Sales Reps Management</title>
+  <style>
+    body{font-family: Arial; background:#f4f6f9; padding:40px;}
+    h2{color:#333;}
+    input, button{padding:10px; margin:5px 0;}
+    table{width:100%; border-collapse:collapse; background:white; border-radius:6px; overflow:hidden;}
+    th, td{padding:10px; border:1px solid #ddd;}
+    th{background:#0073aa; color:white;}
+    button{background:#0073aa; color:white; border:none; border-radius:5px; cursor:pointer;}
+    button:hover{background:#005fd1;}
+  </style>
+</head>
+<body>
+  <h2>Sales Reps</h2>
+  <input type="text" id="rep-id" placeholder="Sales ID">
+  <input type="text" id="rep-name" placeholder="Name">
+  <input type="number" id="rep-split" placeholder="Residual Split %" min="0" max="100">
+  <button onclick="addRep()">Add Sales Rep</button>
+
+  <table>
+    <thead>
+      <tr><th>Sales ID</th><th>Name</th><th>Residual Split %</th><th>Action</th></tr>
+    </thead>
+    <tbody id="reps-table"></tbody>
+  </table>
+
+<script>
+function addRep(){
+  const id = document.getElementById("rep-id").value.trim();
+  const name = document.getElementById("rep-name").value.trim();
+  const split = document.getElementById("rep-split").value.trim();
+
+  if(!id || !name || !split){ alert("Fill all fields"); return; }
+
+  const tbody = document.getElementById("reps-table");
+  const tr = document.createElement("tr");
+  tr.innerHTML = `<td>${id}</td><td>${name}</td><td>${split}</td><td><button onclick="this.closest('tr').remove()">Delete</button></td>`;
+  tbody.appendChild(tr);
+
+  document.getElementById("rep-id").value="";
+  document.getElementById("rep-name").value="";
+  document.getElementById("rep-split").value="";
+}
+</script>
+</body>
+</html>
