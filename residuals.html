@@ -26,7 +26,7 @@ button:hover {background:#005fd1;}
 
 <h2>Residual Import</h2>
 
-<h3>Upload Residual File</h3>
+<h3>Add Residual Batch</h3>
 Residual Name: <input id="resName" placeholder="Residual Name">
 Month/Year: <input type="month" id="resMonth">
 File: <input type="file" id="resFile" accept=".csv">
@@ -64,6 +64,7 @@ function renderTable(){
       <td>${res.account}</td>
       <td>$${res.amount.toFixed(2)}</td>
       <td>
+        <button onclick="editResidual(${i})">Edit</button>
         <button onclick="deleteResidual(${i})">Delete</button>
       </td>
     `;
@@ -80,7 +81,42 @@ function deleteResidual(index){
   }
 }
 
-// Parse CSV file and import
+// Edit residual - inline edit
+function editResidual(index){
+  let res = residuals[index];
+  let tr = document.getElementById("residualBody").children[index];
+  tr.innerHTML = `
+    <td><input id="editBatchName" value="${res.batchName}"></td>
+    <td><input type="month" id="editMonth" value="${res.month}"></td>
+    <td><input id="editRepCode" value="${res.repCode}"></td>
+    <td><input id="editAccount" value="${res.account}"></td>
+    <td><input type="number" id="editAmount" value="${res.amount}"></td>
+    <td>
+      <button onclick="saveEdit(${index})">Save</button>
+      <button onclick="cancelEdit()">Cancel</button>
+    </td>
+  `;
+}
+
+// Save edit
+function saveEdit(index){
+  let res = residuals[index];
+  res.batchName = document.getElementById("editBatchName").value.trim();
+  res.month = document.getElementById("editMonth").value;
+  res.repCode = document.getElementById("editRepCode").value.trim();
+  res.account = document.getElementById("editAccount").value.trim();
+  res.amount = parseFloat(document.getElementById("editAmount").value);
+
+  localStorage.setItem("residuals", JSON.stringify(residuals));
+  renderTable();
+}
+
+// Cancel edit
+function cancelEdit(){
+  renderTable();
+}
+
+// Import CSV file
 function importResidualFile(){
   let fileInput = document.getElementById("resFile");
   let file = fileInput.files[0];
@@ -96,7 +132,7 @@ function importResidualFile(){
   reader.onload = function(e){
     let text = e.target.result;
     let lines = text.split("\n").filter(l => l.trim() !== "");
-    // Expect CSV format: repCode,account,amount
+
     lines.forEach(line=>{
       let [repCode, account, amount] = line.split(",");
       if(repCode && account && amount){
@@ -110,10 +146,9 @@ function importResidualFile(){
       }
     });
 
-    // Save and render
     localStorage.setItem("residuals", JSON.stringify(residuals));
     renderTable();
-    alert("Residuals imported: " + lines.length);
+    alert(`Imported ${lines.length} residuals`);
     document.getElementById("resFile").value="";
     document.getElementById("resName").value="";
     document.getElementById("resMonth").value="";
