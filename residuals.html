@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Residual Import</title>
+<title>Residuals</title>
 <style>
 body { font-family: Arial; background:#f4f6f9; padding:40px;}
 .nav a {margin-right:10px; padding:8px 15px; background:#0073aa; color:white; border-radius:5px; text-decoration:none;}
@@ -10,7 +10,7 @@ body { font-family: Arial; background:#f4f6f9; padding:40px;}
 table {width:100%; border-collapse: collapse; margin-top:20px; background:white; border-radius:6px; overflow:hidden;}
 th, td {border:1px solid #ddd; padding:8px; text-align:left;}
 th {background:#0073aa; color:white;}
-input, select, button {padding:5px; margin-right:5px;}
+input, button {padding:5px; margin-right:5px;}
 button {background:#0073aa; color:white; border:none; border-radius:5px; cursor:pointer;}
 button:hover {background:#005fd1;}
 </style>
@@ -29,40 +29,37 @@ button:hover {background:#005fd1;}
 <h3>Add Residual Batch</h3>
 Residual Name: <input id="resName" placeholder="Residual Name">
 Month/Year: <input type="month" id="resMonth">
-File: <input type="file" id="resFile" accept=".csv">
-<button onclick="importResidualFile()">Upload</button>
+Who: <input id="resWho" placeholder="Agent/Source">
+File: <input type="file" id="resFile" accept=".csv,.xlsx,.pdf">
+<button onclick="addResidualBatch()">Add Residual</button>
 
 <table>
 <thead>
-  <tr>
-    <th>Residual Name</th>
-    <th>Month</th>
-    <th>Rep Code</th>
-    <th>Account / Who</th>
-    <th>Amount</th>
-    <th>Actions</th>
-  </tr>
+<tr>
+  <th>Residual Name</th>
+  <th>Month</th>
+  <th>Who</th>
+  <th>File</th>
+  <th>Actions</th>
+</tr>
 </thead>
 <tbody id="residualBody"></tbody>
 </table>
 
 <script>
-// Load residuals from localStorage
 let residuals = JSON.parse(localStorage.getItem("residuals") || "[]");
 
-// Render table
 function renderTable(){
   let tbody = document.getElementById("residualBody");
   tbody.innerHTML = "";
-
   residuals.forEach((res, i)=>{
+    let fileLink = res.fileData ? `<a href="${res.fileData}" download="${res.fileName}">${res.fileName}</a>` : res.fileName;
     let tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${res.batchName}</td>
       <td>${res.month}</td>
-      <td>${res.repCode}</td>
-      <td>${res.account}</td>
-      <td>$${res.amount.toFixed(2)}</td>
+      <td>${res.who}</td>
+      <td>${fileLink}</td>
       <td>
         <button onclick="editResidual(${i})">Edit</button>
         <button onclick="deleteResidual(${i})">Delete</button>
@@ -72,7 +69,37 @@ function renderTable(){
   });
 }
 
-// Delete residual
+function addResidualBatch(){
+  let batchName = document.getElementById("resName").value.trim();
+  let month = document.getElementById("resMonth").value;
+  let who = document.getElementById("resWho").value.trim();
+  let fileInput = document.getElementById("resFile");
+
+  if(!batchName || !month || !who || !fileInput.files[0]){
+    alert("Please fill all fields and select a file.");
+    return;
+  }
+
+  let file = fileInput.files[0];
+  let reader = new FileReader();
+  reader.onload = function(e){
+    residuals.push({
+      batchName: batchName,
+      month: month,
+      who: who,
+      fileName: file.name,
+      fileData: e.target.result
+    });
+    localStorage.setItem("residuals", JSON.stringify(residuals));
+    renderTable();
+    document.getElementById("resName").value="";
+    document.getElementById("resMonth").value="";
+    document.getElementById("resWho").value="";
+    document.getElementById("resFile").value="";
+  };
+  reader.readAsDataURL(file);
+}
+
 function deleteResidual(index){
   if(confirm("Delete this residual?")){
     residuals.splice(index,1);
@@ -81,16 +108,14 @@ function deleteResidual(index){
   }
 }
 
-// Edit residual - inline edit
 function editResidual(index){
   let res = residuals[index];
   let tr = document.getElementById("residualBody").children[index];
   tr.innerHTML = `
     <td><input id="editBatchName" value="${res.batchName}"></td>
     <td><input type="month" id="editMonth" value="${res.month}"></td>
-    <td><input id="editRepCode" value="${res.repCode}"></td>
-    <td><input id="editAccount" value="${res.account}"></td>
-    <td><input type="number" id="editAmount" value="${res.amount}"></td>
+    <td><input id="editWho" value="${res.who}"></td>
+    <td>${res.fileName}</td>
     <td>
       <button onclick="saveEdit(${index})">Save</button>
       <button onclick="cancelEdit()">Cancel</button>
@@ -98,65 +123,17 @@ function editResidual(index){
   `;
 }
 
-// Save edit
 function saveEdit(index){
   let res = residuals[index];
   res.batchName = document.getElementById("editBatchName").value.trim();
   res.month = document.getElementById("editMonth").value;
-  res.repCode = document.getElementById("editRepCode").value.trim();
-  res.account = document.getElementById("editAccount").value.trim();
-  res.amount = parseFloat(document.getElementById("editAmount").value);
-
+  res.who = document.getElementById("editWho").value.trim();
   localStorage.setItem("residuals", JSON.stringify(residuals));
   renderTable();
 }
 
-// Cancel edit
-function cancelEdit(){
-  renderTable();
-}
+function cancelEdit(){ renderTable(); }
 
-// Import CSV file
-function importResidualFile(){
-  let fileInput = document.getElementById("resFile");
-  let file = fileInput.files[0];
-  let batchName = document.getElementById("resName").value.trim();
-  let month = document.getElementById("resMonth").value;
-
-  if(!file || !batchName || !month){
-    alert("Please provide residual name, month, and file.");
-    return;
-  }
-
-  let reader = new FileReader();
-  reader.onload = function(e){
-    let text = e.target.result;
-    let lines = text.split("\n").filter(l => l.trim() !== "");
-
-    lines.forEach(line=>{
-      let [repCode, account, amount] = line.split(",");
-      if(repCode && account && amount){
-        residuals.push({
-          batchName: batchName,
-          month: month,
-          repCode: repCode.trim(),
-          account: account.trim(),
-          amount: parseFloat(amount)
-        });
-      }
-    });
-
-    localStorage.setItem("residuals", JSON.stringify(residuals));
-    renderTable();
-    alert(`Imported ${lines.length} residuals`);
-    document.getElementById("resFile").value="";
-    document.getElementById("resName").value="";
-    document.getElementById("resMonth").value="";
-  };
-  reader.readAsText(file);
-}
-
-// Initial render
 renderTable();
 </script>
 
