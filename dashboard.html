@@ -10,6 +10,7 @@ body { font-family: Arial; background:#f4f6f9; padding:40px;}
 table {width:100%; border-collapse: collapse; margin-top:20px; background:white; border-radius:6px; overflow:hidden;}
 th, td {border:1px solid #ddd; padding:8px; text-align:left;}
 th {background:#0073aa; color:white;}
+input {padding:5px;}
 </style>
 </head>
 <body>
@@ -38,40 +39,25 @@ Month/Year: <input type="month" id="dashMonth" onchange="renderDashboard()">
 </table>
 
 <script>
-// Load residuals and sales reps
 let residuals = JSON.parse(localStorage.getItem("residuals") || "[]");
 let reps = JSON.parse(localStorage.getItem("salesReps") || "[]");
 
 function renderDashboard(){
   let tbody = document.getElementById("dashboardBody");
   tbody.innerHTML = "";
-
   let selectedMonth = document.getElementById("dashMonth").value;
 
   reps.forEach(rep=>{
-    // Agent name
     let agentName = rep.firstName + " " + rep.lastName;
-
-    // Filter residuals by month and agent (who matches first or last name)
     let filtered = residuals.filter(r=>r.month === selectedMonth && r.who.includes(rep.firstName));
-
-    // Calculate total residual income for agent
     let totalResidual = 0;
     filtered.forEach(r=>{
-      // If rep has multiple codes, calculate total for each code
       rep.codes.forEach(c=>{
-        // Simple assumption: all residuals for this agent count for their split
-        totalResidual += (c.split/100) * 0; // Placeholder if file had amounts
-        // For now, we just show 0, actual calculation requires residual file parsing
+        totalResidual += (c.split/100)*0; // Placeholder for actual residual amounts
       });
     });
-
     let tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${agentName}</td>
-      <td>—</td>
-      <td>$${totalResidual.toFixed(2)}</td>
-    `;
+    tr.innerHTML = `<td>${agentName}</td><td>—</td><td>$${totalResidual.toFixed(2)}</td>`;
     tbody.appendChild(tr);
   });
 }
