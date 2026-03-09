@@ -1,61 +1,77 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Residual Dashboard</title>
-  <style>
-    body{font-family: Arial; background:#f4f6f9; padding:40px;}
-    h2{color:#333;}
-    table{width:100%; border-collapse:collapse; background:white; border-radius:6px; overflow:hidden; margin-top:20px;}
-    th, td{padding:10px; border:1px solid #ddd;}
-    th{background:#0073aa; color:white;}
-    input, button{padding:8px; margin:5px 0;}
-    button{background:#0073aa; color:white; border:none; border-radius:5px; cursor:pointer;}
-    button:hover{background:#005fd1;}
-    .nav a{margin-right:10px; padding:8px 15px; background:#0073aa; color:white; border-radius:5px; text-decoration:none;}
-    .nav a.logout{background:#d00;}
-  </style>
+<title>Agent Dashboard</title>
+<style>
+body { font-family: Arial; background:#f4f6f9; padding:40px; }
+table {width:100%; border-collapse: collapse; margin-top:20px; background:white; border-radius:6px; overflow:hidden;}
+th, td {border:1px solid #ddd; padding:8px; text-align:left;}
+th {background:#0073aa; color:white;}
+input, select {padding:5px; margin-right:5px;}
+</style>
 </head>
 <body>
 
-<!-- Navigation -->
-<div class="nav">
-  <a href="dashboard.html">Dashboard</a>
-  <a href="residuals.html">Residuals</a>
-  <a href="sales-reps.html">Sales Reps</a>
-  <a href="index.html" class="logout">Logout</a>
-</div>
+<h2>Agent Dashboard</h2>
 
-<h2>Agents & Rep Codes</h2>
-
-<input type="text" id="agent-name" placeholder="Agent Name">
-<input type="text" id="rep-code" placeholder="Rep Code">
-<input type="number" id="split-percent" placeholder="Residual Split %">
-<button onclick="addAgent()">Add Agent</button>
+<label for="monthSelect">Select Month:</label>
+<input type="month" id="monthSelect">
+<button onclick="renderDashboard()">View</button>
 
 <table>
-  <thead>
-    <tr><th>Agent Name</th><th>Rep Code</th><th>Residual Split</th><th>Action</th></tr>
-  </thead>
-  <tbody id="agents-table"></tbody>
+<thead>
+  <tr>
+    <th>Agent Name</th>
+    <th>Processing Volume</th>
+    <th>Residual Income</th>
+  </tr>
+</thead>
+<tbody id="dashboardBody"></tbody>
 </table>
 
 <script>
-function addAgent(){
-  var name = document.getElementById("agent-name").value.trim();
-  var code = document.getElementById("rep-code").value.trim();
-  var split = document.getElementById("split-percent").value.trim();
+// Sample data (replace with localStorage data in real use)
+let reps = JSON.parse(localStorage.getItem("reps") || "[]");
+let residuals = JSON.parse(localStorage.getItem("residuals") || "[]");
 
-  if(!name || !code || !split){ alert("Fill all fields"); return; }
+function renderDashboard(){
+  let tbody = document.getElementById("dashboardBody");
+  tbody.innerHTML = "";
 
-  var tbody = document.getElementById("agents-table");
-  var tr = document.createElement("tr");
-  tr.innerHTML = `<td>${name}</td><td>${code}</td><td>${split}</td><td><button onclick="this.closest('tr').remove()">Delete</button></td>`;
-  tbody.appendChild(tr);
+  let selectedMonth = document.getElementById("monthSelect").value;
+  if(!selectedMonth){ alert("Select month"); return; }
 
-  document.getElementById("agent-name").value="";
-  document.getElementById("rep-code").value="";
-  document.getElementById("split-percent").value="";
+  // Convert to YYYY-MM for comparison
+  let monthStr = selectedMonth;
+
+  reps.forEach(rep => {
+    let totalProcessing = 0;
+    let totalResidual = 0;
+
+    rep.codes.forEach(codeObj => {
+      residuals.forEach(res => {
+        if(res.repCode === codeObj.code && res.date.startsWith(monthStr)){
+          totalProcessing += parseFloat(res.amount);
+          totalResidual += parseFloat(res.amount) * (parseFloat(codeObj.split)/100);
+        }
+      });
+    });
+
+    let tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${rep.first} ${rep.last}</td>
+      <td>$${totalProcessing.toFixed(2)}</td>
+      <td>$${totalResidual.toFixed(2)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
 }
+
+// Optionally, set default to current month
+let now = new Date();
+document.getElementById("monthSelect").value = now.toISOString().slice(0,7);
+renderDashboard();
+
 </script>
 </body>
 </html>
