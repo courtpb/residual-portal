@@ -66,18 +66,14 @@ margin-top:6px;
 <a href="index.html" class="logout">Logout</a>
 </div>
 
-
 <h2>Create Sales Rep</h2>
 
 <input id="first" placeholder="First Name">
 <input id="last" placeholder="Last Name">
-<input id="repid" placeholder="Rep ID">
 
 <button onclick="createRep()">Create Rep</button>
 
-
 <div id="repList"></div>
-
 
 
 <script>
@@ -89,41 +85,34 @@ localStorage.setItem("reps",JSON.stringify(reps))
 render()
 }
 
-
 function createRep(){
 
 let first=document.getElementById("first").value
 let last=document.getElementById("last").value
-let id=document.getElementById("repid").value
 
-if(!first||!last||!id){
-alert("Fill all fields")
+if(!first || !last){
+alert("Enter first and last name")
 return
 }
 
 reps.push({
 first:first,
 last:last,
-id:id,
 codes:[]
 })
 
 document.getElementById("first").value=""
 document.getElementById("last").value=""
-document.getElementById("repid").value=""
 
 save()
-
 }
-
-
 
 function addCode(repIndex){
 
 let code=prompt("Enter Rep Code")
 let split=prompt("Enter Split %")
 
-if(!code||!split)return
+if(!code || !split) return
 
 reps[repIndex].codes.push({
 code:code,
@@ -131,33 +120,29 @@ split:split
 })
 
 save()
-
 }
-
-
 
 function editCode(repIndex,codeIndex){
 
-let newSplit=prompt("New Split %",reps[repIndex].codes[codeIndex].split)
+let rep=reps[repIndex].codes[codeIndex]
 
-if(newSplit){
-reps[repIndex].codes[codeIndex].split=newSplit
+let newCode=prompt("Edit Rep Code",rep.code)
+let newSplit=prompt("Edit Split %",rep.split)
+
+if(newCode) rep.code=newCode
+if(newSplit) rep.split=newSplit
+
 save()
 }
-
-}
-
-
 
 function deleteCode(repIndex,codeIndex){
 
+if(confirm("Delete this code?")){
 reps[repIndex].codes.splice(codeIndex,1)
-
 save()
-
 }
 
-
+}
 
 function editRep(repIndex){
 
@@ -166,14 +151,11 @@ let rep=reps[repIndex]
 let newFirst=prompt("First Name",rep.first)
 let newLast=prompt("Last Name",rep.last)
 
-if(newFirst)rep.first=newFirst
-if(newLast)rep.last=newLast
+if(newFirst) rep.first=newFirst
+if(newLast) rep.last=newLast
 
 save()
-
 }
-
-
 
 function deleteRep(repIndex){
 
@@ -183,8 +165,6 @@ save()
 }
 
 }
-
-
 
 function render(){
 
@@ -200,7 +180,7 @@ div.className="rep-card"
 
 let html=`
 
-<h3>${rep.first} ${rep.last} (ID: ${rep.id})</h3>
+<h3>${rep.first} ${rep.last}</h3>
 
 <button onclick="editRep(${repIndex})">Edit Rep</button>
 <button onclick="deleteRep(${repIndex})">Delete Rep</button>
@@ -227,7 +207,6 @@ Split: <b>${c.split}%</b>
 })
 
 div.innerHTML=html
-
 container.appendChild(div)
 
 })
