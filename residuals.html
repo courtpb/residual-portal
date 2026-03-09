@@ -10,8 +10,8 @@ body { font-family: Arial; background:#f4f6f9; padding:40px;}
 table {width:100%; border-collapse: collapse; margin-top:20px; background:white; border-radius:6px; overflow:hidden;}
 th, td {border:1px solid #ddd; padding:8px; text-align:left;}
 th {background:#0073aa; color:white;}
-input, select {padding:5px; margin-right:5px;}
-button {padding:5px 8px; background:#0073aa; color:white; border:none; border-radius:5px; cursor:pointer;}
+input, select, button {padding:5px; margin-right:5px;}
+button {background:#0073aa; color:white; border:none; border-radius:5px; cursor:pointer;}
 button:hover {background:#005fd1;}
 </style>
 </head>
@@ -26,23 +26,19 @@ button:hover {background:#005fd1;}
 
 <h2>Residual Import</h2>
 
-<h3>Add New Residual</h3>
-
+<h3>Upload Residual File</h3>
 Residual Name: <input id="resName" placeholder="Residual Name">
 Month/Year: <input type="month" id="resMonth">
-Who: <input id="resWho" placeholder="Agent/Source">
-Rep Code: <input id="resCode" placeholder="Rep Code">
-Amount: <input type="number" id="resAmount" placeholder="Amount">
-
-<button onclick="addResidual()">Add Residual</button>
+File: <input type="file" id="resFile" accept=".csv">
+<button onclick="importResidualFile()">Upload</button>
 
 <table>
 <thead>
   <tr>
     <th>Residual Name</th>
-    <th>Month/Year</th>
-    <th>Who</th>
+    <th>Month</th>
     <th>Rep Code</th>
+    <th>Account / Who</th>
     <th>Amount</th>
     <th>Actions</th>
   </tr>
@@ -51,67 +47,8 @@ Amount: <input type="number" id="resAmount" placeholder="Amount">
 </table>
 
 <script>
+// Load residuals from localStorage
 let residuals = JSON.parse(localStorage.getItem("residuals") || "[]");
-
-// Add new residual
-function addResidual(){
-  let name = document.getElementById("resName").value.trim();
-  let month = document.getElementById("resMonth").value;
-  let who = document.getElementById("resWho").value.trim();
-  let code = document.getElementById("resCode").value.trim();
-  let amount = parseFloat(document.getElementById("resAmount").value);
-
-  if(!name || !month || !who || !code || isNaN(amount)){
-    alert("Enter all fields correctly");
-    return;
-  }
-
-  // Store in same format dashboard expects
-  residuals.push({
-    merchant: name,
-    repCode: code,
-    date: month + "-01",  // dashboard reads this
-    amount: amount
-  });
-
-  document.getElementById("resName").value="";
-  document.getElementById("resMonth").value="";
-  document.getElementById("resWho").value="";
-  document.getElementById("resCode").value="";
-  document.getElementById("resAmount").value="";
-
-  saveAndRender();
-}
-
-// Edit residual
-function editResidual(index){
-  let res = residuals[index];
-  let name = prompt("Residual Name", res.merchant);
-  let month = prompt("Month/Year (YYYY-MM)", res.date.slice(0,7));
-  let code = prompt("Rep Code", res.repCode);
-  let amount = prompt("Amount", res.amount);
-
-  if(name) res.merchant = name;
-  if(month) res.date = month + "-01";
-  if(code) res.repCode = code;
-  if(amount) res.amount = parseFloat(amount);
-
-  saveAndRender();
-}
-
-// Delete residual
-function deleteResidual(index){
-  if(confirm("Delete this residual?")){
-    residuals.splice(index,1);
-    saveAndRender();
-  }
-}
-
-// Save to localStorage and render table
-function saveAndRender(){
-  localStorage.setItem("residuals", JSON.stringify(residuals));
-  renderTable();
-}
 
 // Render table
 function renderTable(){
@@ -121,18 +58,67 @@ function renderTable(){
   residuals.forEach((res, i)=>{
     let tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${res.merchant}</td>
-      <td>${res.date.slice(0,7)}</td>
-      <td>${resWho || ""}</td>
+      <td>${res.batchName}</td>
+      <td>${res.month}</td>
       <td>${res.repCode}</td>
+      <td>${res.account}</td>
       <td>$${res.amount.toFixed(2)}</td>
       <td>
-        <button onclick="editResidual(${i})">Edit</button>
         <button onclick="deleteResidual(${i})">Delete</button>
       </td>
     `;
     tbody.appendChild(tr);
   });
+}
+
+// Delete residual
+function deleteResidual(index){
+  if(confirm("Delete this residual?")){
+    residuals.splice(index,1);
+    localStorage.setItem("residuals", JSON.stringify(residuals));
+    renderTable();
+  }
+}
+
+// Parse CSV file and import
+function importResidualFile(){
+  let fileInput = document.getElementById("resFile");
+  let file = fileInput.files[0];
+  let batchName = document.getElementById("resName").value.trim();
+  let month = document.getElementById("resMonth").value;
+
+  if(!file || !batchName || !month){
+    alert("Please provide residual name, month, and file.");
+    return;
+  }
+
+  let reader = new FileReader();
+  reader.onload = function(e){
+    let text = e.target.result;
+    let lines = text.split("\n").filter(l => l.trim() !== "");
+    // Expect CSV format: repCode,account,amount
+    lines.forEach(line=>{
+      let [repCode, account, amount] = line.split(",");
+      if(repCode && account && amount){
+        residuals.push({
+          batchName: batchName,
+          month: month,
+          repCode: repCode.trim(),
+          account: account.trim(),
+          amount: parseFloat(amount)
+        });
+      }
+    });
+
+    // Save and render
+    localStorage.setItem("residuals", JSON.stringify(residuals));
+    renderTable();
+    alert("Residuals imported: " + lines.length);
+    document.getElementById("resFile").value="";
+    document.getElementById("resName").value="";
+    document.getElementById("resMonth").value="";
+  };
+  reader.readAsText(file);
 }
 
 // Initial render
