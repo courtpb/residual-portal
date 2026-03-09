@@ -1,152 +1,77 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Sales Rep Manager</title>
+<title>Agent Dashboard</title>
 <style>
-body { font-family: Arial; background:#f4f6f9; padding:40px;}
-.nav a {margin-right:10px; padding:8px 15px; background:#0073aa; color:white; border-radius:5px; text-decoration:none;}
-.nav a.logout {background:#d00;}
-table {width:100%; border-collapse:collapse; margin-top:20px; background:white; border-radius:6px; overflow:hidden;}
+body { font-family: Arial; background:#f4f6f9; padding:40px; }
+table {width:100%; border-collapse: collapse; margin-top:20px; background:white; border-radius:6px; overflow:hidden;}
 th, td {border:1px solid #ddd; padding:8px; text-align:left;}
 th {background:#0073aa; color:white;}
-button {padding:5px 8px; background:#0073aa; color:white; border:none; border-radius:5px; cursor:pointer;}
-button:hover {background:#005fd1;}
-input {padding:5px; width:90%;}
+input, select {padding:5px; margin-right:5px;}
 </style>
 </head>
 <body>
 
-<div class="nav">
-  <a href="dashboard.html">Dashboard</a>
-  <a href="residuals.html">Residuals</a>
-  <a href="sales-reps.html">Sales Reps</a>
-  <a href="index.html" class="logout">Logout</a>
-</div>
+<h2>Agent Dashboard</h2>
 
-<h2>Sales Reps</h2>
+<label for="monthSelect">Select Month:</label>
+<input type="month" id="monthSelect">
+<button onclick="renderDashboard()">View</button>
 
-<h3>Add New Sales Rep</h3>
-First Name: <input id="newFirst" placeholder="First Name">
-Last Name: <input id="newLast" placeholder="Last Name">
-<button onclick="addRep()">Add Rep</button>
-
-<table id="repTable">
-  <thead>
-    <tr>
-      <th>Rep Name</th>
-      <th>Rep Code</th>
-      <th>Split %</th>
-      <th>Actions</th>
-    </tr>
-  </thead>
-  <tbody id="repBody"></tbody>
+<table>
+<thead>
+  <tr>
+    <th>Agent Name</th>
+    <th>Processing Volume</th>
+    <th>Residual Income</th>
+  </tr>
+</thead>
+<tbody id="dashboardBody"></tbody>
 </table>
 
 <script>
+// Sample data (replace with localStorage data in real use)
 let reps = JSON.parse(localStorage.getItem("reps") || "[]");
+let residuals = JSON.parse(localStorage.getItem("residuals") || "[]");
 
-function saveData(){
-  localStorage.setItem("reps", JSON.stringify(reps));
-  render();
-}
-
-function addRep(){
-  let first = document.getElementById("newFirst").value.trim();
-  let last = document.getElementById("newLast").value.trim();
-  if(!first || !last){ alert("Enter first and last name"); return; }
-  reps.push({first:first, last:last, codes:[]});
-  document.getElementById("newFirst").value = "";
-  document.getElementById("newLast").value = "";
-  saveData();
-}
-
-function addRepCode(repIndex){
-  let codeInput = document.getElementById("newCode-"+repIndex);
-  let splitInput = document.getElementById("newSplit-"+repIndex);
-  let code = codeInput.value.trim();
-  let split = splitInput.value.trim();
-  if(!code || !split){ alert("Enter code and split"); return; }
-  reps[repIndex].codes.push({code: code, split: split});
-  codeInput.value=""; splitInput.value="";
-  saveData();
-}
-
-function editRepName(repIndex){
-  let newFirst = prompt("First Name", reps[repIndex].first);
-  let newLast = prompt("Last Name", reps[repIndex].last);
-  if(newFirst) reps[repIndex].first = newFirst;
-  if(newLast) reps[repIndex].last = newLast;
-  saveData();
-}
-
-function deleteRep(repIndex){
-  if(confirm("Delete this rep?")){
-    reps.splice(repIndex,1);
-    saveData();
-  }
-}
-
-function editCode(repIndex, codeIndex){
-  let newCode = prompt("Rep Code", reps[repIndex].codes[codeIndex].code);
-  let newSplit = prompt("Split %", reps[repIndex].codes[codeIndex].split);
-  if(newCode) reps[repIndex].codes[codeIndex].code = newCode;
-  if(newSplit) reps[repIndex].codes[codeIndex].split = newSplit;
-  saveData();
-}
-
-function deleteCode(repIndex, codeIndex){
-  if(confirm("Delete this code?")){
-    reps[repIndex].codes.splice(codeIndex,1);
-    saveData();
-  }
-}
-
-function render(){
-  let tbody = document.getElementById("repBody");
+function renderDashboard(){
+  let tbody = document.getElementById("dashboardBody");
   tbody.innerHTML = "";
 
-  reps.forEach((rep, repIndex) => {
-    if(rep.codes.length === 0){
-      let tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${rep.first} ${rep.last}</td>
-        <td>-</td>
-        <td>-</td>
-        <td>
-          <button onclick="editRepName(${repIndex})">Edit Name</button>
-          <button onclick="deleteRep(${repIndex})">Delete Rep</button><br>
-          <input id="newCode-${repIndex}" placeholder="Rep Code">
-          <input id="newSplit-${repIndex}" placeholder="Split %">
-          <button onclick="addRepCode(${repIndex})">Add Code</button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    } else {
-      rep.codes.forEach((codeObj, codeIndex) => {
-        let tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${codeIndex===0 ? rep.first + " " + rep.last : ""}</td>
-          <td>${codeObj.code}</td>
-          <td>${codeObj.split}%</td>
-          <td>
-            <button onclick="editCode(${repIndex},${codeIndex})">Edit</button>
-            <button onclick="deleteCode(${repIndex},${codeIndex})">Delete</button>
-            ${codeIndex === rep.codes.length-1 ? 
-              `<br><input id="newCode-${repIndex}" placeholder="Rep Code">
-               <input id="newSplit-${repIndex}" placeholder="Split %">
-               <button onclick="addRepCode(${repIndex})">Add Code</button>` : ''}
-            ${codeIndex === 0 ? `<br><button onclick="editRepName(${repIndex})">Edit Name</button>
-                                 <button onclick="deleteRep(${repIndex})">Delete Rep</button>` : ''}
-          </td>
-        `;
-        tbody.appendChild(tr);
+  let selectedMonth = document.getElementById("monthSelect").value;
+  if(!selectedMonth){ alert("Select month"); return; }
+
+  // Convert to YYYY-MM for comparison
+  let monthStr = selectedMonth;
+
+  reps.forEach(rep => {
+    let totalProcessing = 0;
+    let totalResidual = 0;
+
+    rep.codes.forEach(codeObj => {
+      residuals.forEach(res => {
+        if(res.repCode === codeObj.code && res.date.startsWith(monthStr)){
+          totalProcessing += parseFloat(res.amount);
+          totalResidual += parseFloat(res.amount) * (parseFloat(codeObj.split)/100);
+        }
       });
-    }
+    });
+
+    let tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${rep.first} ${rep.last}</td>
+      <td>$${totalProcessing.toFixed(2)}</td>
+      <td>$${totalResidual.toFixed(2)}</td>
+    `;
+    tbody.appendChild(tr);
   });
 }
 
-render();
-</script>
+// Optionally, set default to current month
+let now = new Date();
+document.getElementById("monthSelect").value = now.toISOString().slice(0,7);
+renderDashboard();
 
+</script>
 </body>
 </html>
