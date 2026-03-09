@@ -25,12 +25,12 @@ background:#d00;
 }
 
 input{
-padding:8px;
+padding:6px;
 margin:4px;
 }
 
 button{
-padding:8px 12px;
+padding:6px 10px;
 background:#0073aa;
 color:white;
 border:none;
@@ -44,7 +44,7 @@ background:#005fd1;
 
 .rep-card{
 background:white;
-padding:15px;
+padding:20px;
 margin-top:20px;
 border-radius:8px;
 box-shadow:0 0 5px rgba(0,0,0,.1);
@@ -57,7 +57,6 @@ margin-top:8px;
 </style>
 </head>
 
-
 <body>
 
 <div class="nav">
@@ -67,28 +66,29 @@ margin-top:8px;
 <a href="index.html" class="logout">Logout</a>
 </div>
 
-<h2>Create Sales Rep</h2>
+<h2>Add Sales Rep</h2>
 
-<input id="first" placeholder="First Name">
-<input id="last" placeholder="Last Name">
+<input id="firstName" placeholder="First Name">
+<input id="lastName" placeholder="Last Name">
 
-<button onclick="createRep()">Create Rep</button>
+<button onclick="addRep()">Add Rep</button>
 
-<div id="repList"></div>
+<div id="repContainer"></div>
+
 
 <script>
 
 let reps = JSON.parse(localStorage.getItem("reps") || "[]")
 
-function save(){
+function saveData(){
 localStorage.setItem("reps",JSON.stringify(reps))
 render()
 }
 
-function createRep(){
+function addRep(){
 
-let first=document.getElementById("first").value
-let last=document.getElementById("last").value
+let first=document.getElementById("firstName").value
+let last=document.getElementById("lastName").value
 
 if(!first || !last){
 alert("Enter first and last name")
@@ -101,19 +101,41 @@ last:last,
 codes:[]
 })
 
-document.getElementById("first").value=""
-document.getElementById("last").value=""
+document.getElementById("firstName").value=""
+document.getElementById("lastName").value=""
 
-save()
+saveData()
+
 }
 
-function addCode(repIndex){
+function updateRep(repIndex){
 
-let code=document.getElementById("code-"+repIndex).value
-let split=document.getElementById("split-"+repIndex).value
+reps[repIndex].first =
+document.getElementById("repFirst-"+repIndex).value
+
+reps[repIndex].last =
+document.getElementById("repLast-"+repIndex).value
+
+saveData()
+
+}
+
+function deleteRep(repIndex){
+
+if(confirm("Delete this rep?")){
+reps.splice(repIndex,1)
+saveData()
+}
+
+}
+
+function addRepCode(repIndex){
+
+let code=document.getElementById("newCode-"+repIndex).value
+let split=document.getElementById("newSplit-"+repIndex).value
 
 if(!code || !split){
-alert("Enter code and split")
+alert("Enter rep code and split")
 return
 }
 
@@ -122,47 +144,33 @@ code:code,
 split:split
 })
 
-save()
-}
+saveData()
 
-function updateRep(repIndex){
-
-reps[repIndex].first=document.getElementById("repFirst-"+repIndex).value
-reps[repIndex].last=document.getElementById("repLast-"+repIndex).value
-
-save()
 }
 
 function updateCode(repIndex,codeIndex){
 
-reps[repIndex].codes[codeIndex].code=
-document.getElementById("repCode-"+repIndex+"-"+codeIndex).value
+reps[repIndex].codes[codeIndex].code =
+document.getElementById("code-"+repIndex+"-"+codeIndex).value
 
-reps[repIndex].codes[codeIndex].split=
-document.getElementById("repSplit-"+repIndex+"-"+codeIndex).value
+reps[repIndex].codes[codeIndex].split =
+document.getElementById("split-"+repIndex+"-"+codeIndex).value
 
-save()
+saveData()
+
 }
 
 function deleteCode(repIndex,codeIndex){
 
 reps[repIndex].codes.splice(codeIndex,1)
 
-save()
-}
-
-function deleteRep(repIndex){
-
-if(confirm("Delete this rep?")){
-reps.splice(repIndex,1)
-save()
-}
+saveData()
 
 }
 
 function render(){
 
-let container=document.getElementById("repList")
+let container=document.getElementById("repContainer")
 container.innerHTML=""
 
 reps.forEach((rep,repIndex)=>{
@@ -180,7 +188,7 @@ First Name:
 Last Name:
 <input id="repLast-${repIndex}" value="${rep.last}">
 
-<button onclick="updateRep(${repIndex})">Save Rep</button>
+<button onclick="updateRep(${repIndex})">Save</button>
 <button onclick="deleteRep(${repIndex})">Delete Rep</button>
 
 <h4>Rep Codes</h4>
@@ -194,10 +202,10 @@ html+=`
 <div class="code-row">
 
 Code:
-<input id="repCode-${repIndex}-${codeIndex}" value="${c.code}">
+<input id="code-${repIndex}-${codeIndex}" value="${c.code}">
 
 Split %:
-<input id="repSplit-${repIndex}-${codeIndex}" value="${c.split}">
+<input id="split-${repIndex}-${codeIndex}" value="${c.split}">
 
 <button onclick="updateCode(${repIndex},${codeIndex})">Save</button>
 <button onclick="deleteCode(${repIndex},${codeIndex})">Delete</button>
@@ -212,10 +220,10 @@ html+=`
 
 <br>
 
-<input id="code-${repIndex}" placeholder="New Rep Code">
-<input id="split-${repIndex}" placeholder="Split %">
+<input id="newCode-${repIndex}" placeholder="Rep Code">
+<input id="newSplit-${repIndex}" placeholder="Split %">
 
-<button onclick="addCode(${repIndex})">Add Code</button>
+<button onclick="addRepCode(${repIndex})">Add Rep Code</button>
 
 `
 
