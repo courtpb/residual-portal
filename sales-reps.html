@@ -24,12 +24,13 @@ text-decoration:none;
 background:#d00;
 }
 
-input,button{
+input{
 padding:8px;
 margin:4px;
 }
 
 button{
+padding:8px 12px;
 background:#0073aa;
 color:white;
 border:none;
@@ -50,7 +51,7 @@ box-shadow:0 0 5px rgba(0,0,0,.1);
 }
 
 .code-row{
-margin-top:6px;
+margin-top:8px;
 }
 
 </style>
@@ -74,7 +75,6 @@ margin-top:6px;
 <button onclick="createRep()">Create Rep</button>
 
 <div id="repList"></div>
-
 
 <script>
 
@@ -109,10 +109,13 @@ save()
 
 function addCode(repIndex){
 
-let code=prompt("Enter Rep Code")
-let split=prompt("Enter Split %")
+let code=document.getElementById("code-"+repIndex).value
+let split=document.getElementById("split-"+repIndex).value
 
-if(!code || !split) return
+if(!code || !split){
+alert("Enter code and split")
+return
+}
 
 reps[repIndex].codes.push({
 code:code,
@@ -122,37 +125,28 @@ split:split
 save()
 }
 
-function editCode(repIndex,codeIndex){
+function updateRep(repIndex){
 
-let rep=reps[repIndex].codes[codeIndex]
+reps[repIndex].first=document.getElementById("repFirst-"+repIndex).value
+reps[repIndex].last=document.getElementById("repLast-"+repIndex).value
 
-let newCode=prompt("Edit Rep Code",rep.code)
-let newSplit=prompt("Edit Split %",rep.split)
+save()
+}
 
-if(newCode) rep.code=newCode
-if(newSplit) rep.split=newSplit
+function updateCode(repIndex,codeIndex){
+
+reps[repIndex].codes[codeIndex].code=
+document.getElementById("repCode-"+repIndex+"-"+codeIndex).value
+
+reps[repIndex].codes[codeIndex].split=
+document.getElementById("repSplit-"+repIndex+"-"+codeIndex).value
 
 save()
 }
 
 function deleteCode(repIndex,codeIndex){
 
-if(confirm("Delete this code?")){
 reps[repIndex].codes.splice(codeIndex,1)
-save()
-}
-
-}
-
-function editRep(repIndex){
-
-let rep=reps[repIndex]
-
-let newFirst=prompt("First Name",rep.first)
-let newLast=prompt("Last Name",rep.last)
-
-if(newFirst) rep.first=newFirst
-if(newLast) rep.last=newLast
 
 save()
 }
@@ -169,22 +163,27 @@ save()
 function render(){
 
 let container=document.getElementById("repList")
-
 container.innerHTML=""
 
 reps.forEach((rep,repIndex)=>{
 
 let div=document.createElement("div")
-
 div.className="rep-card"
 
 let html=`
 
-<h3>${rep.first} ${rep.last}</h3>
+<h3>Sales Rep</h3>
 
-<button onclick="editRep(${repIndex})">Edit Rep</button>
+First Name:
+<input id="repFirst-${repIndex}" value="${rep.first}">
+
+Last Name:
+<input id="repLast-${repIndex}" value="${rep.last}">
+
+<button onclick="updateRep(${repIndex})">Save Rep</button>
 <button onclick="deleteRep(${repIndex})">Delete Rep</button>
-<button onclick="addCode(${repIndex})">Add Rep Code</button>
+
+<h4>Rep Codes</h4>
 
 `
 
@@ -194,10 +193,13 @@ html+=`
 
 <div class="code-row">
 
-Rep Code: <b>${c.code}</b>  
-Split: <b>${c.split}%</b>
+Code:
+<input id="repCode-${repIndex}-${codeIndex}" value="${c.code}">
 
-<button onclick="editCode(${repIndex},${codeIndex})">Edit</button>
+Split %:
+<input id="repSplit-${repIndex}-${codeIndex}" value="${c.split}">
+
+<button onclick="updateCode(${repIndex},${codeIndex})">Save</button>
 <button onclick="deleteCode(${repIndex},${codeIndex})">Delete</button>
 
 </div>
@@ -205,6 +207,17 @@ Split: <b>${c.split}%</b>
 `
 
 })
+
+html+=`
+
+<br>
+
+<input id="code-${repIndex}" placeholder="New Rep Code">
+<input id="split-${repIndex}" placeholder="Split %">
+
+<button onclick="addCode(${repIndex})">Add Code</button>
+
+`
 
 div.innerHTML=html
 container.appendChild(div)
