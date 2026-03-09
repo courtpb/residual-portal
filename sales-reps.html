@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Sales Reps</title>
+<style>
+body { font-family: Arial; background:#f4f6f9; padding:40px;}
+.nav a {margin-right:10px; padding:8px 15px; background:#0073aa; color:white; border-radius:5px; text-decoration:none;}
+.nav a.logout {background:#d00;}
+.nav a:hover {background:#005fd1;}
+table {width:100%; border-collapse: collapse; margin-top:20px; background:white; border-radius:6px; overflow:hidden;}
+th, td {border:1px solid #ddd; padding:8px; text-align:left;}
+th {background:#0073aa; color:white;}
+input, select, button {padding:5px; margin-right:5px;}
+button {background:#0073aa; color:white; border:none; border-radius:5px; cursor:pointer;}
+button:hover {background:#005fd1;}
+.code-input {margin-bottom:5px;}
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <a href="dashboard.html">Dashboard</a>
+  <a href="residuals.html">Residuals</a>
+  <a href="sales-reps.html">Sales Reps</a>
+  <a href="index.html" class="logout">Logout</a>
+</div>
+
+<h2>Sales Rep Settings</h2>
+
+<h3>Add New Sales Rep</h3>
+First Name: <input id="repFirst" placeholder="First Name">
+Last Name: <input id="repLast" placeholder="Last Name">
+
+<div id="codesContainer">
+  <div class="code-input">
+    Rep Code: <input class="repCode" placeholder="Code">
+    Split %: <input class="repSplit" type="number" min="0" max="100" placeholder="Split %">
+  </div>
+</div>
+
+<button onclick="addCodeInput()">+ Add Another Code</button>
+<button onclick="addRep()">Add Sales Rep</button>
+
+<table>
+<thead>
+<tr>
+  <th>First Name</th>
+  <th>Last Name</th>
+  <th>Codes & Splits</th>
+  <th>Actions</th>
+</tr>
+</thead>
+<tbody id="repBody"></tbody>
+</table>
+
+<script>
+// Load reps from localStorage
+let reps = JSON.parse(localStorage.getItem("salesReps") || "[]");
+
+// Render table
+function renderTable(){
+  let tbody = document.getElementById("repBody");
+  tbody.innerHTML = "";
+  reps.forEach((rep, i)=>{
+    let codesText = rep.codes.map(c=>`${c.code}:${c.split}%`).join(", ");
+    let tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${rep.firstName}</td>
+      <td>${rep.lastName}</td>
+      <td>${codesText}</td>
+      <td>
+        <button onclick="editRep(${i})">Edit</button>
+        <button onclick="deleteRep(${i})">Delete</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// Add another code input
+function addCodeInput(){
+  let container = document.getElementById("codesContainer");
+  let div = document.createElement("div");
+  div.className = "code-input";
+  div.innerHTML = `Rep Code: <input class="repCode" placeholder="Code"> Split %: <input class="repSplit" type="number" min="0" max="100" placeholder="Split %">`;
+  container.appendChild(div);
+}
+
+// Add new rep
+function addRep(){
+  let first = document.getElementById("repFirst").value.trim();
+  let last = document.getElementById("repLast").value.trim();
+  if(!first || !last){
+    alert("Enter first and last name");
+    return;
+  }
+
+  let codeInputs = document.querySelectorAll("#codesContainer .code-input");
+  let codes = [];
+  codeInputs.forEach(ci=>{
+    let code = ci.querySelector(".repCode").value.trim();
+    let split = parseFloat(ci.querySelector(".repSplit").value);
+    if(code && !isNaN(split)){
+      codes.push({code, split});
+    }
+  });
+
+  if(codes.length === 0){
+    alert("Add at least one rep code with split");
+    return;
+  }
+
+  reps.push({firstName: first, lastName: last, codes});
+  localStorage.setItem("salesReps", JSON.stringify(reps));
+  renderTable();
+
+  // Reset form
+  document.getElementById("repFirst").value="";
+  document.getElementById("repLast").value="";
+  document.getElementById("codesContainer").innerHTML = `
+    <div class="code-input">
+      Rep Code: <input class="repCode" placeholder="Code">
+      Split %: <input class="repSplit" type="number" min="0" max="100" placeholder="Split %">
+    </div>
+  `;
+}
+
+// Delete rep
+function deleteRep(index){
+  if(confirm("Delete this rep?")){
+    reps.splice(index,1);
+    localStorage.setItem("salesReps", JSON.stringify(reps));
+    renderTable();
+  }
+}
+
+// Edit rep
+function editRep(index){
+  let rep = reps[index];
+  let first = prompt("First Name", rep.firstName);
+  let last = prompt("Last Name", rep.lastName);
+  if(first) rep.firstName = first.trim();
+  if(last) rep.lastName = last.trim();
+
+  // Edit codes
+  rep.codes.forEach((c,i)=>{
+    let code = prompt(`Rep Code #${i+1}`, c.code);
+    let split = prompt(`Split % for ${c.code}`, c.split);
+    if(code) c.code = code.trim();
+    if(split) c.split = parseFloat(split);
+  });
+
+  // Optionally allow adding new codes
+  if(confirm("Add new code for this rep?")){
+    let newCode = prompt("New Rep Code");
+    let newSplit = prompt("Split % for new code");
+    if(newCode && newSplit){
+      rep.codes.push({code:newCode.trim(), split:parseFloat(newSplit)});
+    }
+  }
+
+  localStorage.setItem("salesReps", JSON.stringify(reps));
+  renderTable();
+}
+
+// Initial render
+renderTable();
+</script>
+
+</body>
+</html>
