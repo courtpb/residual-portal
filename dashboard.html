@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Dashboard</title>
+<title>Sales Reps</title>
 <style>
 body { font-family: Arial; background:#f4f6f9; padding:40px;}
 .nav a {margin-right:10px; padding:8px 15px; background:#0073aa; color:white; border-radius:5px; text-decoration:none;}
@@ -10,7 +10,10 @@ body { font-family: Arial; background:#f4f6f9; padding:40px;}
 table {width:100%; border-collapse: collapse; margin-top:20px; background:white; border-radius:6px; overflow:hidden;}
 th, td {border:1px solid #ddd; padding:8px; text-align:left;}
 th {background:#0073aa; color:white;}
-input {padding:5px;}
+input {padding:5px; margin:2px 0;}
+button {background:#0073aa; color:white; border:none; border-radius:5px; cursor:pointer; padding:5px 8px; margin:2px;}
+button:hover {background:#005fd1;}
+.code-input {margin-bottom:3px;}
 </style>
 </head>
 <body>
@@ -22,48 +25,149 @@ input {padding:5px;}
   <a href="index.html" class="logout">Logout</a>
 </div>
 
-<h2>Dashboard</h2>
+<h2>Sales Rep Settings</h2>
 
-<h3>Agent Residual Summary</h3>
-Month/Year: <input type="month" id="dashMonth" onchange="renderDashboard()">
+<h3>Add New Sales Rep</h3>
+First Name: <input id="repFirst" placeholder="First Name">
+Last Name: <input id="repLast" placeholder="Last Name">
+
+<div id="codesContainer">
+  <div class="code-input">
+    Rep Code: <input class="repCode" placeholder="Code">
+    Split %: <input class="repSplit" type="number" min="0" max="100" placeholder="Split %">
+  </div>
+</div>
+
+<button onclick="addCodeInput()">+ Add Another Code</button>
+<button onclick="addRep()">Add Sales Rep</button>
 
 <table>
 <thead>
 <tr>
-  <th>Agent Name</th>
-  <th>Processing Volume</th>
-  <th>Residual Income</th>
+  <th>First Name</th>
+  <th>Last Name</th>
+  <th>Codes & Splits</th>
+  <th>Actions</th>
 </tr>
 </thead>
-<tbody id="dashboardBody"></tbody>
+<tbody id="repBody"></tbody>
 </table>
 
 <script>
-let residuals = JSON.parse(localStorage.getItem("residuals") || "[]");
 let reps = JSON.parse(localStorage.getItem("salesReps") || "[]");
 
-function renderDashboard(){
-  let tbody = document.getElementById("dashboardBody");
+function renderTable(){
+  let tbody = document.getElementById("repBody");
   tbody.innerHTML = "";
-  let selectedMonth = document.getElementById("dashMonth").value;
 
-  reps.forEach(rep=>{
-    let agentName = rep.firstName + " " + rep.lastName;
-    let filtered = residuals.filter(r=>r.month === selectedMonth && r.who.includes(rep.firstName));
-    let totalResidual = 0;
-    filtered.forEach(r=>{
-      rep.codes.forEach(c=>{
-        totalResidual += (c.split/100)*0; // Placeholder for actual residual amounts
-      });
-    });
+  reps.forEach((rep,i)=>{
+    let codesText = rep.codes.map(c=>`${c.code}:${c.split}%`).join(", ");
     let tr = document.createElement("tr");
-    tr.innerHTML = `<td>${agentName}</td><td>—</td><td>$${totalResidual.toFixed(2)}</td>`;
+    tr.innerHTML = `
+      <td>${rep.firstName}</td>
+      <td>${rep.lastName}</td>
+      <td>${codesText}</td>
+      <td>
+        <button onclick="editRep(${i})">Edit</button>
+        <button onclick="deleteRep(${i})">Delete</button>
+      </td>
+    `;
     tbody.appendChild(tr);
   });
 }
 
-// Initial render
-renderDashboard();
+function addCodeInput(){
+  let container = document.getElementById("codesContainer");
+  let div = document.createElement("div");
+  div.className = "code-input";
+  div.innerHTML = `Rep Code: <input class="repCode" placeholder="Code"> Split %: <input class="repSplit" type="number" min="0" max="100" placeholder="Split %">`;
+  container.appendChild(div);
+}
+
+function addRep(){
+  let first = document.getElementById("repFirst").value.trim();
+  let last = document.getElementById("repLast").value.trim();
+  if(!first || !last){ alert("Enter first and last name"); return; }
+
+  let codeInputs = document.querySelectorAll("#codesContainer .code-input");
+  let codes = [];
+  codeInputs.forEach(ci=>{
+    let code = ci.querySelector(".repCode").value.trim();
+    let split = parseFloat(ci.querySelector(".repSplit").value);
+    if(code && !isNaN(split)){ codes.push({code, split}); }
+  });
+  if(codes.length === 0){ alert("Add at least one rep code with split"); return; }
+
+  reps.push({firstName:first,lastName:last,codes});
+  localStorage.setItem("salesReps", JSON.stringify(reps));
+  renderTable();
+
+  document.getElementById("repFirst").value="";
+  document.getElementById("repLast").value="";
+  document.getElementById("codesContainer").innerHTML = `
+    <div class="code-input">
+      Rep Code: <input class="repCode" placeholder="Code">
+      Split %: <input class="repSplit" type="number" min="0" max="100" placeholder="Split %">
+    </div>
+  `;
+}
+
+function deleteRep(i){
+  if(confirm("Delete this rep?")){ reps.splice(i,1); localStorage.setItem("salesReps", JSON.stringify(reps)); renderTable(); }
+}
+
+function editRep(i){
+  let rep = reps[i];
+  let tbody = document.getElementById("repBody");
+  let tr = tbody.children[i];
+
+  // Build editable row
+  let codesHtml = rep.codes.map((c,j)=>{
+    return `Code: <input class="editCode" data-index="${j}" value="${c.code}" style="width:60px;"> 
+            Split %: <input class="editSplit" data-index="${j}" type="number" min="0" max="100" value="${c.split}" style="width:50px;">`;
+  }).join("<br>");
+
+  tr.innerHTML = `
+    <td><input id="editFirst" value="${rep.firstName}"></td>
+    <td><input id="editLast" value="${rep.lastName}"></td>
+    <td id="editCodes">${codesHtml}<br>
+        <button onclick="addNewCode(${i})">+ Add Code</button>
+    </td>
+    <td>
+      <button onclick="saveEdit(${i})">Save</button>
+      <button onclick="cancelEdit()">Cancel</button>
+    </td>
+  `;
+}
+
+function addNewCode(i){
+  let rep = reps[i];
+  rep.codes.push({code:"", split:0});
+  editRep(i); // refresh the row
+}
+
+function saveEdit(i){
+  let tr = document.getElementById("repBody").children[i];
+  let rep = reps[i];
+  rep.firstName = document.getElementById("editFirst").value.trim();
+  rep.lastName = document.getElementById("editLast").value.trim();
+
+  let codeInputs = tr.querySelectorAll(".editCode");
+  let splitInputs = tr.querySelectorAll(".editSplit");
+  rep.codes = [];
+  codeInputs.forEach((ci,j)=>{
+    let code = ci.value.trim();
+    let split = parseFloat(splitInputs[j].value);
+    if(code && !isNaN(split)) rep.codes.push({code, split});
+  });
+
+  localStorage.setItem("salesReps", JSON.stringify(reps));
+  renderTable();
+}
+
+function cancelEdit(){ renderTable(); }
+
+renderTable();
 </script>
 
 </body>
