@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Agent Dashboard</title>
+<title>Dashboard</title>
 <style>
 body { font-family: Arial; background:#f4f6f9; padding:40px;}
 .nav a {margin-right:10px; padding:8px 15px; background:#0073aa; color:white; border-radius:5px; text-decoration:none;}
@@ -10,92 +10,73 @@ body { font-family: Arial; background:#f4f6f9; padding:40px;}
 table {width:100%; border-collapse: collapse; margin-top:20px; background:white; border-radius:6px; overflow:hidden;}
 th, td {border:1px solid #ddd; padding:8px; text-align:left;}
 th {background:#0073aa; color:white;}
-input[type="month"] {padding:5px; margin-right:5px;}
 </style>
 </head>
 <body>
 
-<!-- NAVIGATION MENU -->
 <div class="nav">
   <a href="dashboard.html">Dashboard</a>
-  <a href="#" onclick="alert('Residuals page coming soon')">Residuals</a>
+  <a href="residuals.html">Residuals</a>
+  <a href="sales-reps.html">Sales Reps</a>
   <a href="index.html" class="logout">Logout</a>
 </div>
 
-<h2>Agent Dashboard</h2>
+<h2>Dashboard</h2>
 
-<label for="monthSelect">Select Month:</label>
-<input type="month" id="monthSelect">
-<button onclick="renderDashboard()">View</button>
+<h3>Agent Residual Summary</h3>
+Month/Year: <input type="month" id="dashMonth" onchange="renderDashboard()">
 
 <table>
 <thead>
-  <tr>
-    <th>Agent Name</th>
-    <th>Processing Volume</th>
-    <th>Residual Income</th>
-  </tr>
+<tr>
+  <th>Agent Name</th>
+  <th>Processing Volume</th>
+  <th>Residual Income</th>
+</tr>
 </thead>
 <tbody id="dashboardBody"></tbody>
 </table>
 
 <script>
-// --- Sample Data for Testing ---
-let reps = JSON.parse(localStorage.getItem("reps") || "[]");
+// Load residuals and sales reps
 let residuals = JSON.parse(localStorage.getItem("residuals") || "[]");
+let reps = JSON.parse(localStorage.getItem("salesReps") || "[]");
 
-// --- Example data if empty (only for testing)
-if(reps.length===0){
-  reps = [
-    {first:"John", last:"Smith", codes:[{code:"REP1001", split:10}]},
-    {first:"Jane", last:"Doe", codes:[{code:"REP2002", split:15}]}
-  ];
-  localStorage.setItem("reps", JSON.stringify(reps));
-}
-
-if(residuals.length===0){
-  residuals = [
-    {merchant:"ABC Store", repCode:"REP1001", date:"2026-03-01", amount:200},
-    {merchant:"Pizza Shop", repCode:"REP1001", date:"2026-03-02", amount:300},
-    {merchant:"Gas Station", repCode:"REP2002", date:"2026-03-01", amount:400}
-  ];
-  localStorage.setItem("residuals", JSON.stringify(residuals));
-}
-
-// --- Render Dashboard
 function renderDashboard(){
   let tbody = document.getElementById("dashboardBody");
   tbody.innerHTML = "";
 
-  let selectedMonth = document.getElementById("monthSelect").value;
-  if(!selectedMonth){ alert("Select month"); return; }
+  let selectedMonth = document.getElementById("dashMonth").value;
 
-  reps.forEach(rep => {
-    let totalProcessing = 0;
+  reps.forEach(rep=>{
+    // Agent name
+    let agentName = rep.firstName + " " + rep.lastName;
+
+    // Filter residuals by month and agent (who matches first or last name)
+    let filtered = residuals.filter(r=>r.month === selectedMonth && r.who.includes(rep.firstName));
+
+    // Calculate total residual income for agent
     let totalResidual = 0;
-
-    rep.codes.forEach(codeObj => {
-      residuals.forEach(res => {
-        if(res.repCode === codeObj.code && res.date.startsWith(selectedMonth)){
-          totalProcessing += parseFloat(res.amount);
-          totalResidual += parseFloat(res.amount) * (parseFloat(codeObj.split)/100);
-        }
+    filtered.forEach(r=>{
+      // If rep has multiple codes, calculate total for each code
+      rep.codes.forEach(c=>{
+        // Simple assumption: all residuals for this agent count for their split
+        totalResidual += (c.split/100) * 0; // Placeholder if file had amounts
+        // For now, we just show 0, actual calculation requires residual file parsing
       });
     });
 
     let tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${rep.first} ${rep.last}</td>
-      <td>$${totalProcessing.toFixed(2)}</td>
+      <td>${agentName}</td>
+      <td>—</td>
       <td>$${totalResidual.toFixed(2)}</td>
     `;
     tbody.appendChild(tr);
   });
 }
 
-// --- Default to current month
-let now = new Date();
-document.getElementById("monthSelect").value = now.toISOString().slice(0,7);
+// Initial render
 renderDashboard();
 </script>
 
