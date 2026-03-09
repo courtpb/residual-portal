@@ -9,9 +9,9 @@ body { font-family: Arial; background:#f4f6f9; padding:40px;}
 table {width:100%; border-collapse:collapse; margin-top:20px; background:white; border-radius:6px; overflow:hidden;}
 th, td {border:1px solid #ddd; padding:8px; text-align:left;}
 th {background:#0073aa; color:white;}
-input {width:90%; padding:6px;}
-button {padding:6px 10px; background:#0073aa; color:white; border:none; border-radius:5px; cursor:pointer;}
+button {padding:5px 8px; background:#0073aa; color:white; border:none; border-radius:5px; cursor:pointer;}
 button:hover {background:#005fd1;}
+input {padding:5px; width:90%;}
 </style>
 </head>
 <body>
@@ -55,8 +55,8 @@ function addRep(){
   let last = document.getElementById("newLast").value.trim();
   if(!first || !last){ alert("Enter first and last name"); return; }
   reps.push({first:first, last:last, codes:[]});
-  document.getElementById("newFirst").value="";
-  document.getElementById("newLast").value="";
+  document.getElementById("newFirst").value = "";
+  document.getElementById("newLast").value = "";
   saveData();
 }
 
@@ -66,29 +66,16 @@ function addRepCode(repIndex){
   let code = codeInput.value.trim();
   let split = splitInput.value.trim();
   if(!code || !split){ alert("Enter code and split"); return; }
-  reps[repIndex].codes.push({code:code, split:split});
+  reps[repIndex].codes.push({code: code, split: split});
   codeInput.value=""; splitInput.value="";
   saveData();
 }
 
-function updateRepCode(repIndex, codeIndex){
-  let code = document.getElementById("code-"+repIndex+"-"+codeIndex).value.trim();
-  let split = document.getElementById("split-"+repIndex+"-"+codeIndex).value.trim();
-  reps[repIndex].codes[codeIndex].code = code;
-  reps[repIndex].codes[codeIndex].split = split;
-  saveData();
-}
-
-function deleteRepCode(repIndex, codeIndex){
-  reps[repIndex].codes.splice(codeIndex,1);
-  saveData();
-}
-
 function editRepName(repIndex){
-  let first = prompt("First Name", reps[repIndex].first);
-  let last = prompt("Last Name", reps[repIndex].last);
-  if(first) reps[repIndex].first = first;
-  if(last) reps[repIndex].last = last;
+  let newFirst = prompt("First Name", reps[repIndex].first);
+  let newLast = prompt("Last Name", reps[repIndex].last);
+  if(newFirst) reps[repIndex].first = newFirst;
+  if(newLast) reps[repIndex].last = newLast;
   saveData();
 }
 
@@ -99,13 +86,27 @@ function deleteRep(repIndex){
   }
 }
 
+function editCode(repIndex, codeIndex){
+  let newCode = prompt("Rep Code", reps[repIndex].codes[codeIndex].code);
+  let newSplit = prompt("Split %", reps[repIndex].codes[codeIndex].split);
+  if(newCode) reps[repIndex].codes[codeIndex].code = newCode;
+  if(newSplit) reps[repIndex].codes[codeIndex].split = newSplit;
+  saveData();
+}
+
+function deleteCode(repIndex, codeIndex){
+  if(confirm("Delete this code?")){
+    reps[repIndex].codes.splice(codeIndex,1);
+    saveData();
+  }
+}
+
 function render(){
   let tbody = document.getElementById("repBody");
   tbody.innerHTML = "";
 
-  reps.forEach((rep, repIndex)=>{
-    if(rep.codes.length===0){
-      // show one row for rep without codes
+  reps.forEach((rep, repIndex) => {
+    if(rep.codes.length === 0){
       let tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${rep.first} ${rep.last}</td>
@@ -113,7 +114,7 @@ function render(){
         <td>-</td>
         <td>
           <button onclick="editRepName(${repIndex})">Edit Name</button>
-          <button onclick="deleteRep(${repIndex})">Delete Rep</button>
+          <button onclick="deleteRep(${repIndex})">Delete Rep</button><br>
           <input id="newCode-${repIndex}" placeholder="Rep Code">
           <input id="newSplit-${repIndex}" placeholder="Split %">
           <button onclick="addRepCode(${repIndex})">Add Code</button>
@@ -121,30 +122,31 @@ function render(){
       `;
       tbody.appendChild(tr);
     } else {
-      rep.codes.forEach((codeObj, codeIndex)=>{
+      rep.codes.forEach((codeObj, codeIndex) => {
         let tr = document.createElement("tr");
         tr.innerHTML = `
-          <td>${repIndex===0 && codeIndex===0 ? rep.first + " " + rep.last : ""}</td>
-          <td><input id="code-${repIndex}-${codeIndex}" value="${codeObj.code}"></td>
-          <td><input id="split-${repIndex}-${codeIndex}" value="${codeObj.split}"></td>
+          <td>${codeIndex===0 ? rep.first + " " + rep.last : ""}</td>
+          <td>${codeObj.code}</td>
+          <td>${codeObj.split}%</td>
           <td>
-            <button onclick="updateRepCode(${repIndex},${codeIndex})">Save</button>
-            <button onclick="deleteRepCode(${repIndex},${codeIndex})">Delete Code</button>
-            ${codeIndex===rep.codes.length-1? `<input id="newCode-${repIndex}" placeholder="Rep Code">
-            <input id="newSplit-${repIndex}" placeholder="Split %">
-            <button onclick="addRepCode(${repIndex})">Add Code</button>` : ''}
-            ${codeIndex===0 ? `<button onclick="editRepName(${repIndex})">Edit Name</button>
-            <button onclick="deleteRep(${repIndex})">Delete Rep</button>` : ''}
+            <button onclick="editCode(${repIndex},${codeIndex})">Edit</button>
+            <button onclick="deleteCode(${repIndex},${codeIndex})">Delete</button>
+            ${codeIndex === rep.codes.length-1 ? 
+              `<br><input id="newCode-${repIndex}" placeholder="Rep Code">
+               <input id="newSplit-${repIndex}" placeholder="Split %">
+               <button onclick="addRepCode(${repIndex})">Add Code</button>` : ''}
+            ${codeIndex === 0 ? `<br><button onclick="editRepName(${repIndex})">Edit Name</button>
+                                 <button onclick="deleteRep(${repIndex})">Delete Rep</button>` : ''}
           </td>
         `;
         tbody.appendChild(tr);
-      })
+      });
     }
   });
 }
 
 render();
-
 </script>
+
 </body>
 </html>
