@@ -3,13 +3,14 @@
 <head>
 <title>Agent Dashboard</title>
 <style>
-body { font-family: Arial; background:#f4f6f9; padding:40px; }
+body { font-family: Arial; background:#f4f6f9; padding:40px;}
 .nav a {margin-right:10px; padding:8px 15px; background:#0073aa; color:white; border-radius:5px; text-decoration:none;}
 .nav a.logout {background:#d00;}
+.nav a:hover {background:#005fd1;}
 table {width:100%; border-collapse: collapse; margin-top:20px; background:white; border-radius:6px; overflow:hidden;}
 th, td {border:1px solid #ddd; padding:8px; text-align:left;}
 th {background:#0073aa; color:white;}
-input, select {padding:5px; margin-right:5px;}
+input[type="month"] {padding:5px; margin-right:5px;}
 </style>
 </head>
 <body>
@@ -17,8 +18,7 @@ input, select {padding:5px; margin-right:5px;}
 <!-- NAVIGATION MENU -->
 <div class="nav">
   <a href="dashboard.html">Dashboard</a>
-  <a href="residuals.html">Residuals</a>
-  <a href="sales-reps.html">Sales Reps</a>
+  <a href="#" onclick="alert('Residuals page coming soon')">Residuals</a>
   <a href="index.html" class="logout">Logout</a>
 </div>
 
@@ -40,10 +40,29 @@ input, select {padding:5px; margin-right:5px;}
 </table>
 
 <script>
-// Sample data (replace with localStorage data in real use)
+// --- Sample Data for Testing ---
 let reps = JSON.parse(localStorage.getItem("reps") || "[]");
 let residuals = JSON.parse(localStorage.getItem("residuals") || "[]");
 
+// --- Example data if empty (only for testing)
+if(reps.length===0){
+  reps = [
+    {first:"John", last:"Smith", codes:[{code:"REP1001", split:10}]},
+    {first:"Jane", last:"Doe", codes:[{code:"REP2002", split:15}]}
+  ];
+  localStorage.setItem("reps", JSON.stringify(reps));
+}
+
+if(residuals.length===0){
+  residuals = [
+    {merchant:"ABC Store", repCode:"REP1001", date:"2026-03-01", amount:200},
+    {merchant:"Pizza Shop", repCode:"REP1001", date:"2026-03-02", amount:300},
+    {merchant:"Gas Station", repCode:"REP2002", date:"2026-03-01", amount:400}
+  ];
+  localStorage.setItem("residuals", JSON.stringify(residuals));
+}
+
+// --- Render Dashboard
 function renderDashboard(){
   let tbody = document.getElementById("dashboardBody");
   tbody.innerHTML = "";
@@ -51,16 +70,13 @@ function renderDashboard(){
   let selectedMonth = document.getElementById("monthSelect").value;
   if(!selectedMonth){ alert("Select month"); return; }
 
-  // Convert to YYYY-MM for comparison
-  let monthStr = selectedMonth;
-
   reps.forEach(rep => {
     let totalProcessing = 0;
     let totalResidual = 0;
 
     rep.codes.forEach(codeObj => {
       residuals.forEach(res => {
-        if(res.repCode === codeObj.code && res.date.startsWith(monthStr)){
+        if(res.repCode === codeObj.code && res.date.startsWith(selectedMonth)){
           totalProcessing += parseFloat(res.amount);
           totalResidual += parseFloat(res.amount) * (parseFloat(codeObj.split)/100);
         }
@@ -77,7 +93,7 @@ function renderDashboard(){
   });
 }
 
-// Default to current month
+// --- Default to current month
 let now = new Date();
 document.getElementById("monthSelect").value = now.toISOString().slice(0,7);
 renderDashboard();
