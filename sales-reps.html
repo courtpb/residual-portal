@@ -2,241 +2,149 @@
 <html>
 <head>
 <title>Sales Rep Manager</title>
-
 <style>
-
-body{
-font-family:Arial;
-background:#f4f6f9;
-padding:40px;
-}
-
-.nav a{
-margin-right:10px;
-padding:8px 15px;
-background:#0073aa;
-color:white;
-border-radius:5px;
-text-decoration:none;
-}
-
-.nav a.logout{
-background:#d00;
-}
-
-input{
-padding:6px;
-margin:4px;
-}
-
-button{
-padding:6px 10px;
-background:#0073aa;
-color:white;
-border:none;
-border-radius:5px;
-cursor:pointer;
-}
-
-button:hover{
-background:#005fd1;
-}
-
-.rep-card{
-background:white;
-padding:20px;
-margin-top:20px;
-border-radius:8px;
-box-shadow:0 0 5px rgba(0,0,0,.1);
-}
-
-.code-row{
-margin-top:8px;
-}
-
+body { font-family: Arial; background:#f4f6f9; padding:40px;}
+.nav a {margin-right:10px; padding:8px 15px; background:#0073aa; color:white; border-radius:5px; text-decoration:none;}
+.nav a.logout {background:#d00;}
+table {width:100%; border-collapse:collapse; margin-top:20px; background:white; border-radius:6px; overflow:hidden;}
+th, td {border:1px solid #ddd; padding:8px; text-align:left;}
+th {background:#0073aa; color:white;}
+input {width:90%; padding:6px;}
+button {padding:6px 10px; background:#0073aa; color:white; border:none; border-radius:5px; cursor:pointer;}
+button:hover {background:#005fd1;}
 </style>
 </head>
-
 <body>
 
 <div class="nav">
-<a href="dashboard.html">Dashboard</a>
-<a href="residuals.html">Residuals</a>
-<a href="sales-reps.html">Sales Reps</a>
-<a href="index.html" class="logout">Logout</a>
+  <a href="dashboard.html">Dashboard</a>
+  <a href="residuals.html">Residuals</a>
+  <a href="sales-reps.html">Sales Reps</a>
+  <a href="index.html" class="logout">Logout</a>
 </div>
 
-<h2>Add Sales Rep</h2>
+<h2>Sales Reps</h2>
 
-<input id="firstName" placeholder="First Name">
-<input id="lastName" placeholder="Last Name">
-
+<h3>Add New Sales Rep</h3>
+First Name: <input id="newFirst" placeholder="First Name">
+Last Name: <input id="newLast" placeholder="Last Name">
 <button onclick="addRep()">Add Rep</button>
 
-<div id="repContainer"></div>
-
+<table id="repTable">
+  <thead>
+    <tr>
+      <th>Rep Name</th>
+      <th>Rep Code</th>
+      <th>Split %</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody id="repBody"></tbody>
+</table>
 
 <script>
-
-let reps = JSON.parse(localStorage.getItem("reps") || "[]")
+let reps = JSON.parse(localStorage.getItem("reps") || "[]");
 
 function saveData(){
-localStorage.setItem("reps",JSON.stringify(reps))
-render()
+  localStorage.setItem("reps", JSON.stringify(reps));
+  render();
 }
 
 function addRep(){
-
-let first=document.getElementById("firstName").value
-let last=document.getElementById("lastName").value
-
-if(!first || !last){
-alert("Enter first and last name")
-return
-}
-
-reps.push({
-first:first,
-last:last,
-codes:[]
-})
-
-document.getElementById("firstName").value=""
-document.getElementById("lastName").value=""
-
-saveData()
-
-}
-
-function updateRep(repIndex){
-
-reps[repIndex].first =
-document.getElementById("repFirst-"+repIndex).value
-
-reps[repIndex].last =
-document.getElementById("repLast-"+repIndex).value
-
-saveData()
-
-}
-
-function deleteRep(repIndex){
-
-if(confirm("Delete this rep?")){
-reps.splice(repIndex,1)
-saveData()
-}
-
+  let first = document.getElementById("newFirst").value.trim();
+  let last = document.getElementById("newLast").value.trim();
+  if(!first || !last){ alert("Enter first and last name"); return; }
+  reps.push({first:first, last:last, codes:[]});
+  document.getElementById("newFirst").value="";
+  document.getElementById("newLast").value="";
+  saveData();
 }
 
 function addRepCode(repIndex){
-
-let code=document.getElementById("newCode-"+repIndex).value
-let split=document.getElementById("newSplit-"+repIndex).value
-
-if(!code || !split){
-alert("Enter rep code and split")
-return
+  let codeInput = document.getElementById("newCode-"+repIndex);
+  let splitInput = document.getElementById("newSplit-"+repIndex);
+  let code = codeInput.value.trim();
+  let split = splitInput.value.trim();
+  if(!code || !split){ alert("Enter code and split"); return; }
+  reps[repIndex].codes.push({code:code, split:split});
+  codeInput.value=""; splitInput.value="";
+  saveData();
 }
 
-reps[repIndex].codes.push({
-code:code,
-split:split
-})
-
-saveData()
-
+function updateRepCode(repIndex, codeIndex){
+  let code = document.getElementById("code-"+repIndex+"-"+codeIndex).value.trim();
+  let split = document.getElementById("split-"+repIndex+"-"+codeIndex).value.trim();
+  reps[repIndex].codes[codeIndex].code = code;
+  reps[repIndex].codes[codeIndex].split = split;
+  saveData();
 }
 
-function updateCode(repIndex,codeIndex){
-
-reps[repIndex].codes[codeIndex].code =
-document.getElementById("code-"+repIndex+"-"+codeIndex).value
-
-reps[repIndex].codes[codeIndex].split =
-document.getElementById("split-"+repIndex+"-"+codeIndex).value
-
-saveData()
-
+function deleteRepCode(repIndex, codeIndex){
+  reps[repIndex].codes.splice(codeIndex,1);
+  saveData();
 }
 
-function deleteCode(repIndex,codeIndex){
+function editRepName(repIndex){
+  let first = prompt("First Name", reps[repIndex].first);
+  let last = prompt("Last Name", reps[repIndex].last);
+  if(first) reps[repIndex].first = first;
+  if(last) reps[repIndex].last = last;
+  saveData();
+}
 
-reps[repIndex].codes.splice(codeIndex,1)
-
-saveData()
-
+function deleteRep(repIndex){
+  if(confirm("Delete this rep?")){
+    reps.splice(repIndex,1);
+    saveData();
+  }
 }
 
 function render(){
+  let tbody = document.getElementById("repBody");
+  tbody.innerHTML = "";
 
-let container=document.getElementById("repContainer")
-container.innerHTML=""
-
-reps.forEach((rep,repIndex)=>{
-
-let div=document.createElement("div")
-div.className="rep-card"
-
-let html=`
-
-<h3>Sales Rep</h3>
-
-First Name:
-<input id="repFirst-${repIndex}" value="${rep.first}">
-
-Last Name:
-<input id="repLast-${repIndex}" value="${rep.last}">
-
-<button onclick="updateRep(${repIndex})">Save</button>
-<button onclick="deleteRep(${repIndex})">Delete Rep</button>
-
-<h4>Rep Codes</h4>
-
-`
-
-rep.codes.forEach((c,codeIndex)=>{
-
-html+=`
-
-<div class="code-row">
-
-Code:
-<input id="code-${repIndex}-${codeIndex}" value="${c.code}">
-
-Split %:
-<input id="split-${repIndex}-${codeIndex}" value="${c.split}">
-
-<button onclick="updateCode(${repIndex},${codeIndex})">Save</button>
-<button onclick="deleteCode(${repIndex},${codeIndex})">Delete</button>
-
-</div>
-
-`
-
-})
-
-html+=`
-
-<br>
-
-<input id="newCode-${repIndex}" placeholder="Rep Code">
-<input id="newSplit-${repIndex}" placeholder="Split %">
-
-<button onclick="addRepCode(${repIndex})">Add Rep Code</button>
-
-`
-
-div.innerHTML=html
-container.appendChild(div)
-
-})
-
+  reps.forEach((rep, repIndex)=>{
+    if(rep.codes.length===0){
+      // show one row for rep without codes
+      let tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${rep.first} ${rep.last}</td>
+        <td>-</td>
+        <td>-</td>
+        <td>
+          <button onclick="editRepName(${repIndex})">Edit Name</button>
+          <button onclick="deleteRep(${repIndex})">Delete Rep</button>
+          <input id="newCode-${repIndex}" placeholder="Rep Code">
+          <input id="newSplit-${repIndex}" placeholder="Split %">
+          <button onclick="addRepCode(${repIndex})">Add Code</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    } else {
+      rep.codes.forEach((codeObj, codeIndex)=>{
+        let tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${repIndex===0 && codeIndex===0 ? rep.first + " " + rep.last : ""}</td>
+          <td><input id="code-${repIndex}-${codeIndex}" value="${codeObj.code}"></td>
+          <td><input id="split-${repIndex}-${codeIndex}" value="${codeObj.split}"></td>
+          <td>
+            <button onclick="updateRepCode(${repIndex},${codeIndex})">Save</button>
+            <button onclick="deleteRepCode(${repIndex},${codeIndex})">Delete Code</button>
+            ${codeIndex===rep.codes.length-1? `<input id="newCode-${repIndex}" placeholder="Rep Code">
+            <input id="newSplit-${repIndex}" placeholder="Split %">
+            <button onclick="addRepCode(${repIndex})">Add Code</button>` : ''}
+            ${codeIndex===0 ? `<button onclick="editRepName(${repIndex})">Edit Name</button>
+            <button onclick="deleteRep(${repIndex})">Delete Rep</button>` : ''}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      })
+    }
+  });
 }
 
-render()
+render();
 
 </script>
-
 </body>
 </html>
