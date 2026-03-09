@@ -1,83 +1,241 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Sales Reps Management</title>
-  <style>
-    body{font-family: Arial; background:#f4f6f9; padding:40px;}
-    h2{color:#333;}
-    input, button{padding:10px; margin:5px 0;}
-    table{width:100%; border-collapse:collapse; background:white; border-radius:6px; overflow:hidden; margin-top:20px;}
-    th, td{padding:10px; border:1px solid #ddd;}
-    th{background:#0073aa; color:white;}
-    button{background:#0073aa; color:white; border:none; border-radius:5px; cursor:pointer;}
-    button:hover{background:#005fd1;}
-    .nav a{margin-right:10px; padding:8px 15px; background:#0073aa; color:white; border-radius:5px; text-decoration:none;}
-    .nav a.logout{background:#d00;}
-    .form-group{margin-bottom:10px;}
-  </style>
+<title>Sales Rep Manager</title>
+
+<style>
+
+body{
+font-family:Arial;
+background:#f4f6f9;
+padding:40px;
+}
+
+.nav a{
+margin-right:10px;
+padding:8px 15px;
+background:#0073aa;
+color:white;
+border-radius:5px;
+text-decoration:none;
+}
+
+.nav a.logout{
+background:#d00;
+}
+
+input,button{
+padding:8px;
+margin:4px;
+}
+
+button{
+background:#0073aa;
+color:white;
+border:none;
+border-radius:5px;
+cursor:pointer;
+}
+
+button:hover{
+background:#005fd1;
+}
+
+.rep-card{
+background:white;
+padding:15px;
+margin-top:20px;
+border-radius:8px;
+box-shadow:0 0 5px rgba(0,0,0,.1);
+}
+
+.code-row{
+margin-top:6px;
+}
+
+</style>
 </head>
+
+
 <body>
 
-<!-- Navigation -->
 <div class="nav">
-  <a href="dashboard.html">Dashboard</a>
-  <a href="residuals.html">Residuals</a>
-  <a href="sales-reps.html">Sales Reps</a>
-  <a href="index.html" class="logout">Logout</a>
+<a href="dashboard.html">Dashboard</a>
+<a href="residuals.html">Residuals</a>
+<a href="sales-reps.html">Sales Reps</a>
+<a href="index.html" class="logout">Logout</a>
 </div>
 
-<h2>Sales Reps</h2>
 
-<div class="form-group">
-  <input type="text" id="rep-first" placeholder="First Name">
-  <input type="text" id="rep-last" placeholder="Last Name">
-  <input type="text" id="rep-id" placeholder="Rep ID">
-</div>
+<h2>Create Sales Rep</h2>
 
-<div class="form-group">
-  <input type="text" id="sales-id" placeholder="Sales ID">
-  <input type="number" id="split" placeholder="Residual Split %" min="0" max="100">
-  <button onclick="addSalesID()">Add Sales ID</button>
-</div>
+<input id="first" placeholder="First Name">
+<input id="last" placeholder="Last Name">
+<input id="repid" placeholder="Rep ID">
 
-<table>
-  <thead>
-    <tr>
-      <th>Rep Name</th>
-      <th>Rep ID</th>
-      <th>Sales ID</th>
-      <th>Residual Split %</th>
-      <th>Action</th>
-    </tr>
-  </thead>
-  <tbody id="reps-table"></tbody>
-</table>
+<button onclick="createRep()">Create Rep</button>
+
+
+<div id="repList"></div>
+
+
 
 <script>
-let currentRep = null; // holds current rep being edited
 
-function addSalesID(){
-  const first = document.getElementById("rep-first").value.trim();
-  const last = document.getElementById("rep-last").value.trim();
-  const repID = document.getElementById("rep-id").value.trim();
-  const salesID = document.getElementById("sales-id").value.trim();
-  const split = document.getElementById("split").value.trim();
+let reps = JSON.parse(localStorage.getItem("reps") || "[]")
 
-  if(!first || !last || !repID || !salesID || !split){
-    alert("Fill all fields");
-    return;
-  }
-
-  const tbody = document.getElementById("reps-table");
-  const tr = document.createElement("tr");
-  tr.innerHTML = `<td>${first} ${last}</td><td>${repID}</td><td>${salesID}</td><td>${split}</td>
-                  <td><button onclick="this.closest('tr').remove()">Delete</button></td>`;
-  tbody.appendChild(tr);
-
-  // Clear sales ID and split fields only, keep rep info for multiple entries
-  document.getElementById("sales-id").value="";
-  document.getElementById("split").value="";
+function save(){
+localStorage.setItem("reps",JSON.stringify(reps))
+render()
 }
+
+
+function createRep(){
+
+let first=document.getElementById("first").value
+let last=document.getElementById("last").value
+let id=document.getElementById("repid").value
+
+if(!first||!last||!id){
+alert("Fill all fields")
+return
+}
+
+reps.push({
+first:first,
+last:last,
+id:id,
+codes:[]
+})
+
+document.getElementById("first").value=""
+document.getElementById("last").value=""
+document.getElementById("repid").value=""
+
+save()
+
+}
+
+
+
+function addCode(repIndex){
+
+let code=prompt("Enter Rep Code")
+let split=prompt("Enter Split %")
+
+if(!code||!split)return
+
+reps[repIndex].codes.push({
+code:code,
+split:split
+})
+
+save()
+
+}
+
+
+
+function editCode(repIndex,codeIndex){
+
+let newSplit=prompt("New Split %",reps[repIndex].codes[codeIndex].split)
+
+if(newSplit){
+reps[repIndex].codes[codeIndex].split=newSplit
+save()
+}
+
+}
+
+
+
+function deleteCode(repIndex,codeIndex){
+
+reps[repIndex].codes.splice(codeIndex,1)
+
+save()
+
+}
+
+
+
+function editRep(repIndex){
+
+let rep=reps[repIndex]
+
+let newFirst=prompt("First Name",rep.first)
+let newLast=prompt("Last Name",rep.last)
+
+if(newFirst)rep.first=newFirst
+if(newLast)rep.last=newLast
+
+save()
+
+}
+
+
+
+function deleteRep(repIndex){
+
+if(confirm("Delete this rep?")){
+reps.splice(repIndex,1)
+save()
+}
+
+}
+
+
+
+function render(){
+
+let container=document.getElementById("repList")
+
+container.innerHTML=""
+
+reps.forEach((rep,repIndex)=>{
+
+let div=document.createElement("div")
+
+div.className="rep-card"
+
+let html=`
+
+<h3>${rep.first} ${rep.last} (ID: ${rep.id})</h3>
+
+<button onclick="editRep(${repIndex})">Edit Rep</button>
+<button onclick="deleteRep(${repIndex})">Delete Rep</button>
+<button onclick="addCode(${repIndex})">Add Rep Code</button>
+
+`
+
+rep.codes.forEach((c,codeIndex)=>{
+
+html+=`
+
+<div class="code-row">
+
+Rep Code: <b>${c.code}</b>  
+Split: <b>${c.split}%</b>
+
+<button onclick="editCode(${repIndex},${codeIndex})">Edit</button>
+<button onclick="deleteCode(${repIndex},${codeIndex})">Delete</button>
+
+</div>
+
+`
+
+})
+
+div.innerHTML=html
+
+container.appendChild(div)
+
+})
+
+}
+
+render()
+
 </script>
 
 </body>
