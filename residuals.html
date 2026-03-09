@@ -1,23 +1,23 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Residuals Import</title>
-  <style>
-    body{font-family: Arial; background:#f4f6f9; padding:40px;}
-    h2{color:#333;}
-    input, button{padding:10px; margin:10px 0;}
-    table{width:100%; border-collapse:collapse; background:white; border-radius:6px; overflow:hidden; margin-top:20px;}
-    th, td{padding:10px; border:1px solid #ddd;}
-    th{background:#0073aa; color:white;}
-    button{background:#0073aa; color:white; border:none; border-radius:5px; cursor:pointer;}
-    button:hover{background:#005fd1;}
-    .nav a{margin-right:10px; padding:8px 15px; background:#0073aa; color:white; border-radius:5px; text-decoration:none;}
-    .nav a.logout{background:#d00;}
-  </style>
+<title>Residual Import</title>
+<style>
+body { font-family: Arial; background:#f4f6f9; padding:40px;}
+.nav a {margin-right:10px; padding:8px 15px; background:#0073aa; color:white; border-radius:5px; text-decoration:none;}
+.nav a.logout {background:#d00;}
+.nav a:hover {background:#005fd1;}
+table {width:100%; border-collapse: collapse; margin-top:20px; background:white; border-radius:6px; overflow:hidden;}
+th, td {border:1px solid #ddd; padding:8px; text-align:left;}
+th {background:#0073aa; color:white;}
+input, select {padding:5px; margin-right:5px;}
+button {padding:5px 8px; background:#0073aa; color:white; border:none; border-radius:5px; cursor:pointer;}
+button:hover {background:#005fd1;}
+</style>
 </head>
 <body>
 
-<!-- Navigation -->
+<!-- NAVIGATION MENU -->
 <div class="nav">
   <a href="dashboard.html">Dashboard</a>
   <a href="residuals.html">Residuals</a>
@@ -25,39 +25,122 @@
   <a href="index.html" class="logout">Logout</a>
 </div>
 
-<h2>Import Residuals</h2>
-<input type="file" id="file-input" accept=".csv">
-<button onclick="loadCSV()">Upload</button>
+<h2>Residual Import</h2>
+
+<h3>Add New Residual</h3>
+
+Residual Name: <input id="resName" placeholder="Residual Name">
+Month/Year: <input type="month" id="resMonth">
+Who: <input id="resWho" placeholder="Agent/Source">
+Rep Code: <input id="resCode" placeholder="Rep Code">
+Amount: <input type="number" id="resAmount" placeholder="Amount">
+
+<button onclick="addResidual()">Add Residual</button>
 
 <table>
-  <thead>
-    <tr><th>Date</th><th>Transaction</th><th>Amount</th></tr>
-  </thead>
-  <tbody id="residuals-table"></tbody>
+<thead>
+  <tr>
+    <th>Residual Name</th>
+    <th>Month/Year</th>
+    <th>Who</th>
+    <th>Rep Code</th>
+    <th>Amount</th>
+    <th>Actions</th>
+  </tr>
+</thead>
+<tbody id="residualBody"></tbody>
 </table>
 
 <script>
-function loadCSV(){
-  const file = document.getElementById("file-input").files[0];
-  if(!file){ alert("Please select a CSV file"); return; }
+let residuals = JSON.parse(localStorage.getItem("residuals") || "[]");
 
-  const reader = new FileReader();
-  reader.onload = function(e){
-    const text = e.target.result;
-    const rows = text.trim().split("\n");
-    const table = document.getElementById("residuals-table");
-    table.innerHTML=""; // clear previous rows
+// Add new residual
+function addResidual(){
+  let name = document.getElementById("resName").value.trim();
+  let month = document.getElementById("resMonth").value;
+  let who = document.getElementById("resWho").value.trim();
+  let code = document.getElementById("resCode").value.trim();
+  let amount = parseFloat(document.getElementById("resAmount").value);
 
-    rows.forEach((row,i)=>{
-      const cols = row.split(",");
-      if(i===0) return; // skip header row
-      const tr = document.createElement("tr");
-      tr.innerHTML = `<td>${cols[0]}</td><td>${cols[1]}</td><td>${cols[2]}</td>`;
-      table.appendChild(tr);
-    });
+  if(!name || !month || !who || !code || isNaN(amount)){
+    alert("Enter all fields correctly");
+    return;
   }
-  reader.readAsText(file);
+
+  residuals.push({
+    name: name,
+    month: month,
+    who: who,
+    code: code,
+    amount: amount
+  });
+
+  document.getElementById("resName").value="";
+  document.getElementById("resMonth").value="";
+  document.getElementById("resWho").value="";
+  document.getElementById("resCode").value="";
+  document.getElementById("resAmount").value="";
+
+  saveAndRender();
 }
+
+// Edit residual
+function editResidual(index){
+  let res = residuals[index];
+  let name = prompt("Residual Name", res.name);
+  let month = prompt("Month/Year (YYYY-MM)", res.month);
+  let who = prompt("Who", res.who);
+  let code = prompt("Rep Code", res.code);
+  let amount = prompt("Amount", res.amount);
+
+  if(name) res.name = name;
+  if(month) res.month = month;
+  if(who) res.who = who;
+  if(code) res.code = code;
+  if(amount) res.amount = parseFloat(amount);
+
+  saveAndRender();
+}
+
+// Delete residual
+function deleteResidual(index){
+  if(confirm("Delete this residual?")){
+    residuals.splice(index,1);
+    saveAndRender();
+  }
+}
+
+// Save to localStorage and render table
+function saveAndRender(){
+  localStorage.setItem("residuals", JSON.stringify(residuals));
+  renderTable();
+}
+
+// Render table
+function renderTable(){
+  let tbody = document.getElementById("residualBody");
+  tbody.innerHTML = "";
+
+  residuals.forEach((res, i)=>{
+    let tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${res.name}</td>
+      <td>${res.month}</td>
+      <td>${res.who}</td>
+      <td>${res.code}</td>
+      <td>$${res.amount.toFixed(2)}</td>
+      <td>
+        <button onclick="editResidual(${i})">Edit</button>
+        <button onclick="deleteResidual(${i})">Delete</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// Initial render
+renderTable();
 </script>
+
 </body>
 </html>
