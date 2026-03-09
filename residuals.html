@@ -17,7 +17,6 @@ button:hover {background:#005fd1;}
 </head>
 <body>
 
-<!-- NAVIGATION MENU -->
 <div class="nav">
   <a href="dashboard.html">Dashboard</a>
   <a href="residuals.html">Residuals</a>
@@ -67,11 +66,11 @@ function addResidual(){
     return;
   }
 
+  // Store in same format dashboard expects
   residuals.push({
-    name: name,
-    month: month,
-    who: who,
-    code: code,
+    merchant: name,
+    repCode: code,
+    date: month + "-01",  // dashboard reads this
     amount: amount
   });
 
@@ -87,16 +86,14 @@ function addResidual(){
 // Edit residual
 function editResidual(index){
   let res = residuals[index];
-  let name = prompt("Residual Name", res.name);
-  let month = prompt("Month/Year (YYYY-MM)", res.month);
-  let who = prompt("Who", res.who);
-  let code = prompt("Rep Code", res.code);
+  let name = prompt("Residual Name", res.merchant);
+  let month = prompt("Month/Year (YYYY-MM)", res.date.slice(0,7));
+  let code = prompt("Rep Code", res.repCode);
   let amount = prompt("Amount", res.amount);
 
-  if(name) res.name = name;
-  if(month) res.month = month;
-  if(who) res.who = who;
-  if(code) res.code = code;
+  if(name) res.merchant = name;
+  if(month) res.date = month + "-01";
+  if(code) res.repCode = code;
   if(amount) res.amount = parseFloat(amount);
 
   saveAndRender();
@@ -124,10 +121,10 @@ function renderTable(){
   residuals.forEach((res, i)=>{
     let tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${res.name}</td>
-      <td>${res.month}</td>
-      <td>${res.who}</td>
-      <td>${res.code}</td>
+      <td>${res.merchant}</td>
+      <td>${res.date.slice(0,7)}</td>
+      <td>${resWho || ""}</td>
+      <td>${res.repCode}</td>
       <td>$${res.amount.toFixed(2)}</td>
       <td>
         <button onclick="editResidual(${i})">Edit</button>
