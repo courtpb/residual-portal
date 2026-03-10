@@ -54,10 +54,7 @@ th, td {
 }
 th { background: #0073aa; color: white; }
 .total-row { font-weight: bold; background: #eee; }
-.graph-container {
-    width: 100%;
-    margin: 10px 0;
-}
+/* Chart canvas uses full width naturally */
 </style>
 </head>
 <body>
@@ -80,7 +77,7 @@ th { background: #0073aa; color: white; }
   <button onclick="searchMerchant()">Search</button>
 </div>
 
-<div class="graph-container">
+<div>
   <canvas id="merchantChart"></canvas>
 </div>
 
@@ -110,6 +107,7 @@ th { background: #0073aa; color: white; }
 </table>
 
 <script>
+// Sample residual data
 let residuals = [
   {month:"2026-03", name:"Residual A", amount:150000, merchantId:"M001"},
   {month:"2026-02", name:"Residual B", amount:200000, merchantId:"M001"},
@@ -134,7 +132,8 @@ function renderTable(data){
   tbody.innerHTML = "";
   if(data.length===0){
     tbody.innerHTML='<tr><td colspan="3" style="text-align:center;">No residuals found.</td></tr>';
-    totalCell.textContent="$0"; avgCell.textContent="$0"; return;
+    totalCell.textContent="$0"; avgCell.textContent="$0"; 
+    return;
   }
   let total = 0;
   data.sort((a,b)=>b.month.localeCompare(a.month)).forEach(r=>{
@@ -164,7 +163,17 @@ function renderChart(data){
     },
     options:{
       responsive:true,
-      scales:{y:{beginAtZero:true,min:0,max:yMax,ticks:{stepSize:100000,callback:function(value){return "$"+value.toLocaleString();}}}}
+      scales:{
+        y:{
+          beginAtZero:true,
+          min:0,
+          max:yMax,
+          ticks:{
+            stepSize:100000,
+            callback:function(value){return "$"+value.toLocaleString();}
+          }
+        }
+      }
     }
   });
 }
