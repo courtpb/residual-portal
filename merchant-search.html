@@ -6,32 +6,44 @@
 <title>Merchant Search</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-/* === Global styles from your other pages === */
+/* === Container for consistent layout === */
+.container {
+    max-width: 1200px;  /* match your other pages */
+    margin: 0 auto;     /* center content horizontally */
+    padding: 20px;      /* consistent padding */
+}
+
+/* === Global styles from other pages === */
 body {
     font-family: Arial, sans-serif;
-    font-size: 18px; /* exact match */
+    font-size: 18px;
     background-color: #f4f6f9;
     margin: 0;
-    padding: 20px;
+}
+
+/* Navigation menu */
+.nav {
+    margin-bottom: 20px;
 }
 .nav a {
     display: inline-block;
     margin-right: 10px;
-    padding: 10px 16px; /* exact match */
+    padding: 10px 16px;
     background-color: #0073aa;
     color: #fff;
     border-radius: 4px;
     text-decoration: none;
-    font-size: 16px; /* exact match */
+    font-size: 16px;
 }
 .nav a.logout { background-color: #d00; }
 .nav a:hover { background-color: #005fd1; }
 
+/* Headings */
 h2 {
     margin-top: 20px;
 }
 
-/* Inputs/buttons matching other pages */
+/* Inputs/buttons */
 input[type=text] {
     padding: 10px;
     font-size: 16px;
@@ -51,17 +63,17 @@ button {
 }
 button:hover { background-color: #005fd1; }
 
-/* Tables matching other pages */
+/* Tables */
 table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 20px;
-    font-size: 16px; /* match other pages */
+    font-size: 16px;
     background: #fff;
 }
 th, td {
     border: 1px solid #ddd;
-    padding: 10px; /* match other pages */
+    padding: 10px;
     text-align: left;
 }
 th {
@@ -73,7 +85,7 @@ th {
     background-color: #eee;
 }
 
-/* Chart container takes full width, no fixed sizes */
+/* Chart container */
 .graph-container {
     width: 100%;
     margin-top: 20px;
@@ -82,52 +94,54 @@ th {
 </head>
 <body>
 
-<div class="nav">
-  <a href="dashboard.html">Dashboard</a>
-  <a href="residuals.html">Residuals</a>
-  <a href="sales-reps.html">Sales Reps</a>
-  <a href="users.html">Users</a>
-  <a href="my-residuals.html">My Residuals</a>
-  <a href="merchant-search.html">Merchant Search</a>
-  <a href="change-password.html">Change Password</a>
-  <a href="index.html" class="logout">Logout</a>
+<div class="container">
+  <div class="nav">
+    <a href="dashboard.html">Dashboard</a>
+    <a href="residuals.html">Residuals</a>
+    <a href="sales-reps.html">Sales Reps</a>
+    <a href="users.html">Users</a>
+    <a href="my-residuals.html">My Residuals</a>
+    <a href="merchant-search.html">Merchant Search</a>
+    <a href="change-password.html">Change Password</a>
+    <a href="index.html" class="logout">Logout</a>
+  </div>
+
+  <h2>Merchant Search</h2>
+
+  <div>
+      <input type="text" id="merchantInput" placeholder="Enter Merchant ID or DBA">
+      <button onclick="searchMerchant()">Search</button>
+  </div>
+
+  <div class="graph-container">
+      <canvas id="merchantChart"></canvas>
+  </div>
+
+  <table id="merchantTable">
+  <thead>
+  <tr>
+      <th>Month/Year</th>
+      <th>Residual Name</th>
+      <th>Amount</th>
+  </tr>
+  </thead>
+  <tbody id="merchantBody">
+  <tr><td colspan="3" style="text-align:center;">No residuals found.</td></tr>
+  </tbody>
+  <tfoot>
+  <tr class="total-row">
+      <td>Total</td>
+      <td colspan="1"></td>
+      <td id="merchantTotal">$0</td>
+  </tr>
+  <tr class="total-row">
+      <td>Average Monthly</td>
+      <td colspan="1"></td>
+      <td id="merchantAverage">$0</td>
+  </tr>
+  </tfoot>
+  </table>
 </div>
-
-<h2>Merchant Search</h2>
-
-<div>
-    <input type="text" id="merchantInput" placeholder="Enter Merchant ID or DBA">
-    <button onclick="searchMerchant()">Search</button>
-</div>
-
-<div class="graph-container">
-    <canvas id="merchantChart"></canvas>
-</div>
-
-<table id="merchantTable">
-<thead>
-<tr>
-    <th>Month/Year</th>
-    <th>Residual Name</th>
-    <th>Amount</th>
-</tr>
-</thead>
-<tbody id="merchantBody">
-<tr><td colspan="3" style="text-align:center;">No residuals found.</td></tr>
-</tbody>
-<tfoot>
-<tr class="total-row">
-    <td>Total</td>
-    <td colspan="1"></td>
-    <td id="merchantTotal">$0</td>
-</tr>
-<tr class="total-row">
-    <td>Average Monthly</td>
-    <td colspan="1"></td>
-    <td id="merchantAverage">$0</td>
-</tr>
-</tfoot>
-</table>
 
 <script>
 // Sample residual data
