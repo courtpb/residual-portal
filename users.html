@@ -4,35 +4,37 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Users Management</title>
+<link rel="stylesheet" href="style.css"> <!-- optional if you have shared CSS for menu/layout -->
 <style>
-body { font-family: Arial, sans-serif; font-size: 18px; background: #f4f6f9; margin:0; padding:0; }
+/* Page styling to match other portal pages exactly */
+body { font-family: Arial, sans-serif; font-size: 16px; background: #f4f6f9; margin:0; padding:0; }
 header { background: #0073aa; color: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; }
 header h1 { margin: 0; font-size: 20px; }
-nav a { color: white; text-decoration: none; margin-left: 15px; font-weight: bold; }
+nav a { color: white; text-decoration: none; margin-left: 20px; font-weight: bold; font-size: 16px; }
 nav a:hover { text-decoration: underline; }
-main { padding: 20px; }
-input, select { padding: 8px; font-size: 16px; margin-bottom: 10px; display:block; width:300px; }
-button { padding:8px 12px; font-size:16px; border:none; border-radius:4px; background:#0073aa; color:white; cursor:pointer; }
-button:hover{background:#005fd1;}
-table { width:100%; border-collapse: collapse; margin-top:20px; }
-th, td { border:1px solid #ccc; padding:8px; text-align:left; }
-th { background:#eaeaea; }
-.editable { background:#fff3cd; }
+main { padding: 20px; max-width: 1200px; margin: 0 auto; }
+input, select { padding: 8px; font-size: 16px; margin-bottom: 10px; width: 300px; display: inline-block; margin-right: 10px; }
+button { padding: 8px 12px; font-size: 16px; border: none; border-radius: 4px; background: #0073aa; color: white; cursor: pointer; }
+button:hover { background: #005fd1; }
+table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+th { background: #eaeaea; }
+.editable { background: #fff3cd; }
 </style>
 </head>
 <body>
 
 <header>
-<h1>Residual Portal</h1>
-<nav>
-    <a href="dashboard.html">Dashboard</a>
-    <a href="residuals.html">Residuals</a>
-    <a href="sales-reps.html">Sales Reps</a>
-    <a href="users.html">Users</a>
-    <a href="merchant-search.html">Merchant Search</a>
-    <a href="change-password.html">Change Password</a>
-    <a href="index.html">Logout</a>
-</nav>
+    <h1>Residual Portal</h1>
+    <nav>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="residuals.html">Residuals</a>
+        <a href="sales-reps.html">Sales Reps</a>
+        <a href="users.html">Users</a>
+        <a href="merchant-search.html">Merchant Search</a>
+        <a href="change-password.html">Change Password</a>
+        <a href="index.html">Logout</a>
+    </nav>
 </header>
 
 <main>
@@ -65,12 +67,12 @@ th { background:#eaeaea; }
 </main>
 
 <script>
-// Load users from localStorage or start with admin
+// Load users from localStorage or default admin
 let users = JSON.parse(localStorage.getItem("users")) || [
     {email:"admin@email.com", password:"portal123", permission:"admin", assignedRep:null}
 ];
 
-// Render table
+// Render users table
 function renderUsers() {
     const tbody = document.querySelector("#usersTable tbody");
     tbody.innerHTML = "";
@@ -98,7 +100,6 @@ function renderUsers() {
         tr.appendChild(tdPassword);
 
         const tdActions=document.createElement("td");
-
         const editBtn=document.createElement("button");
         editBtn.textContent="Edit";
         editBtn.onclick=()=>toggleEdit(tr,index);
@@ -124,9 +125,9 @@ function addUser(){
 
     if(!email){alert("Email is required."); return;}
 
-    const rep=permission==="admin"?null:assignedRep;
+    const rep = permission === "admin" ? null : assignedRep;
 
-    users.push({email,permission,assignedRep:rep,password});
+    users.push({email, permission, assignedRep: rep, password});
     saveUsers();
     clearInputs();
     renderUsers();
@@ -141,7 +142,7 @@ function deleteUser(index){
     }
 }
 
-// Toggle edit
+// Toggle edit mode
 function toggleEdit(tr,index){
     const editable=tr.querySelectorAll("td");
     const isEditing=tr.classList.contains("editable");
@@ -173,7 +174,7 @@ function toggleEdit(tr,index){
 }
 
 // Save to localStorage
-function saveUsers(){localStorage.setItem("users",JSON.stringify(users));}
+function saveUsers(){localStorage.setItem("users", JSON.stringify(users));}
 function clearInputs(){
     document.getElementById("newEmail").value="";
     document.getElementById("newAssignedRep").value="";
@@ -181,7 +182,7 @@ function clearInputs(){
     document.getElementById("newPassword").value="";
 }
 
-// Temporary password generator
+// Generate temporary password
 function generateTempPassword(){return Math.random().toString(36).slice(-8);}
 
 // Initial render
