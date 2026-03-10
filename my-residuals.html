@@ -2,31 +2,123 @@
 <html>
 <head>
 <title>My Residuals</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 body{font-family:Arial;background:#f4f6f9;padding:40px;}
 .nav a{margin-right:10px;padding:8px 15px;background:#0073aa;color:white;border-radius:5px;text-decoration:none;}
 .nav a.logout{background:#d00;}
 .nav a:hover{background:#005fd1;}
+h2{margin-top:20px;}
 table{width:100%;border-collapse:collapse;margin-top:20px;background:white;}
 th,td{border:1px solid #ddd;padding:8px;text-align:left;}
 th{background:#0073aa;color:white;}
+.total-row{font-weight:bold;background:#eee;}
 </style>
 </head>
 <body>
 
 <div class="nav">
-<a href="dashboard.html">Dashboard</a>
-<a href="residuals.html">Residuals</a>
-<a href="sales-reps.html">Sales Reps</a>
-<a href="users.html">Users</a>
-<a href="my-residuals.html">My Residuals</a>
-<a href="merchant-search.html">Merchant Search</a>
-<a href="change-password.html">Change Password</a>
-<a href="index.html" class="logout">Logout</a>
+  <a href="dashboard.html">Dashboard</a>
+  <a href="residuals.html">Residuals</a>
+  <a href="sales-reps.html">Sales Reps</a>
+  <a href="users.html">Users</a>
+  <a href="my-residuals.html">My Residuals</a>
+  <a href="merchant-search.html">Merchant Search</a>
+  <a href="change-password.html">Change Password</a>
+  <a href="index.html" class="logout">Logout</a>
 </div>
 
 <h2>My Residuals</h2>
-<p>Sales reps will see their residuals and assigned accounts here.</p>
+
+<!-- Residual Graph -->
+<canvas id="residualChart" width="800" height="300"></canvas>
+
+<!-- Table -->
+<table id="residualTable">
+<thead>
+<tr>
+<th>Month/Year</th>
+<th>Residual Name</th>
+<th>Amount</th>
+</tr>
+</thead>
+<tbody id="residualBody">
+<tr><td colspan="3" style="text-align:center;">No residuals added yet.</td></tr>
+</tbody>
+<tfoot>
+<tr class="total-row">
+<td colspan="2">Total</td>
+<td id="residualTotal">$0</td>
+</tr>
+</tfoot>
+</table>
+
+<script>
+// Sample residuals data (replace with your backend data)
+let residuals = JSON.parse(localStorage.getItem("residuals") || "[]");
+
+// Example data for testing:
+// let residuals = [
+//   {month:"2026-03", name:"March Residual", amount:200},
+//   {month:"2026-02", name:"February Residual", amount:150},
+//   {month:"2026-01", name:"January Residual", amount:180}
+// ];
+
+// Sort residuals from most recent to oldest
+residuals.sort((a,b)=>b.month.localeCompare(a.month));
+
+// Render table
+function renderResiduals(){
+    const tbody = document.getElementById("residualBody");
+    const totalCell = document.getElementById("residualTotal");
+    tbody.innerHTML="";
+    if(residuals.length===0){
+        tbody.innerHTML='<tr><td colspan="3" style="text-align:center;">No residuals added yet.</td></tr>';
+        totalCell.textContent="$0";
+        return;
+    }
+    let total = 0;
+    residuals.forEach(r=>{
+        tbody.innerHTML += `<tr>
+            <td>${r.month}</td>
+            <td>${r.name}</td>
+            <td>$${r.amount}</td>
+        </tr>`;
+        total += parseFloat(r.amount);
+    });
+    totalCell.textContent="$" + total.toFixed(2);
+}
+
+// Render graph
+function renderChart(){
+    const ctx = document.getElementById('residualChart').getContext('2d');
+    const labels = residuals.map(r=>r.month).reverse(); // oldest to newest
+    const data = residuals.map(r=>r.amount).reverse();
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Residual Income',
+                data: data,
+                backgroundColor: 'rgba(0,115,170,0.7)',
+                borderColor: 'rgba(0,115,170,1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive:true,
+            scales: {
+                y: { beginAtZero: true }
+            }
+        }
+    });
+}
+
+// Initial render
+renderResiduals();
+renderChart();
+</script>
 
 </body>
 </html>
