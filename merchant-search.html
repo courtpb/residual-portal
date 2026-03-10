@@ -6,77 +6,77 @@
 <title>Merchant Search</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
+/* === Global styles from your other pages === */
 body {
-    font-family: Arial;
-    background: #f4f6f9;
+    font-family: Arial, sans-serif;
+    font-size: 18px; /* exact match */
+    background-color: #f4f6f9;
+    margin: 0;
     padding: 20px;
-    font-size: 16px; /* match other pages */
 }
-
-/* Navigation menu */
 .nav a {
+    display: inline-block;
     margin-right: 10px;
-    padding: 8px 14px; /* match other pages */
-    background: #0073aa;
-    color: white;
-    border-radius: 5px;
+    padding: 10px 16px; /* exact match */
+    background-color: #0073aa;
+    color: #fff;
+    border-radius: 4px;
     text-decoration: none;
-    font-size: 16px; /* match other pages */
+    font-size: 16px; /* exact match */
 }
-.nav a.logout { background: #d00; }
-.nav a:hover { background: #005fd1; }
+.nav a.logout { background-color: #d00; }
+.nav a:hover { background-color: #005fd1; }
 
-/* Headings */
-h2 { margin-top: 20px; }
+h2 {
+    margin-top: 20px;
+}
 
-/* Inputs and buttons */
+/* Inputs/buttons matching other pages */
 input[type=text] {
-    padding: 8px;        /* larger like other pages */
+    padding: 10px;
     font-size: 16px;
-    width: 250px;
-    margin-right: 5px;
+    width: 280px;
     border-radius: 4px;
     border: 1px solid #ccc;
 }
-
 button {
-    padding: 8px 16px;
+    padding: 10px 16px;
     font-size: 16px;
-    border-radius: 4px;
     border: none;
-    background: #0073aa;
+    border-radius: 4px;
+    background-color: #0073aa;
     color: white;
     cursor: pointer;
     margin-top: 5px;
 }
-button:hover { background: #005fd1; }
+button:hover { background-color: #005fd1; }
 
-/* Table styling */
+/* Tables matching other pages */
 table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 10px;
+    margin-top: 20px;
     font-size: 16px; /* match other pages */
-    background: white;
+    background: #fff;
 }
-
 th, td {
     border: 1px solid #ddd;
-    padding: 8px; /* larger padding like other pages */
+    padding: 10px; /* match other pages */
     text-align: left;
 }
-th { background: #0073aa; color: white; }
-.total-row { font-weight: bold; background: #eee; }
-
-/* Chart container */
-.graph-container {
-    width: 100%; /* full width like other pages */
-    margin: 10px 0;
+th {
+    background-color: #0073aa;
+    color: #fff;
+}
+.total-row {
+    font-weight: bold;
+    background-color: #eee;
 }
 
-/* Chart labels scaling naturally with page */
-#merchantChart {
-    /* Chart.js handles sizing automatically */
+/* Chart container takes full width, no fixed sizes */
+.graph-container {
+    width: 100%;
+    margin-top: 20px;
 }
 </style>
 </head>
@@ -96,20 +96,20 @@ th { background: #0073aa; color: white; }
 <h2>Merchant Search</h2>
 
 <div>
-  <input type="text" id="merchantInput" placeholder="Enter Merchant ID or DBA">
-  <button onclick="searchMerchant()">Search</button>
+    <input type="text" id="merchantInput" placeholder="Enter Merchant ID or DBA">
+    <button onclick="searchMerchant()">Search</button>
 </div>
 
 <div class="graph-container">
-  <canvas id="merchantChart"></canvas>
+    <canvas id="merchantChart"></canvas>
 </div>
 
 <table id="merchantTable">
 <thead>
 <tr>
-  <th>Month/Year</th>
-  <th>Residual Name</th>
-  <th>Amount</th>
+    <th>Month/Year</th>
+    <th>Residual Name</th>
+    <th>Amount</th>
 </tr>
 </thead>
 <tbody id="merchantBody">
@@ -117,14 +117,14 @@ th { background: #0073aa; color: white; }
 </tbody>
 <tfoot>
 <tr class="total-row">
-  <td>Total</td>
-  <td colspan="1"></td>
-  <td id="merchantTotal">$0</td>
+    <td>Total</td>
+    <td colspan="1"></td>
+    <td id="merchantTotal">$0</td>
 </tr>
 <tr class="total-row">
-  <td>Average Monthly</td>
-  <td colspan="1"></td>
-  <td id="merchantAverage">$0</td>
+    <td>Average Monthly</td>
+    <td colspan="1"></td>
+    <td id="merchantAverage">$0</td>
 </tr>
 </tfoot>
 </table>
@@ -141,64 +141,64 @@ let residuals = [
 let chartInstance;
 
 function searchMerchant(){
-  const merchantId = document.getElementById("merchantInput").value.trim();
-  if(!merchantId){ alert("Please enter a Merchant ID or DBA"); return; }
-  const filtered = residuals.filter(r => r.merchantId.toLowerCase() === merchantId.toLowerCase());
-  renderTable(filtered);
-  renderChart(filtered);
+    const merchantId = document.getElementById("merchantInput").value.trim();
+    if(!merchantId){ alert("Please enter a Merchant ID or DBA"); return; }
+    const filtered = residuals.filter(r => r.merchantId.toLowerCase() === merchantId.toLowerCase());
+    renderTable(filtered);
+    renderChart(filtered);
 }
 
 function renderTable(data){
-  const tbody = document.getElementById("merchantBody");
-  const totalCell = document.getElementById("merchantTotal");
-  const avgCell = document.getElementById("merchantAverage");
-  tbody.innerHTML = "";
-  if(data.length===0){
-    tbody.innerHTML='<tr><td colspan="3" style="text-align:center;">No residuals found.</td></tr>';
-    totalCell.textContent="$0"; avgCell.textContent="$0"; 
-    return;
-  }
-  let total = 0;
-  data.sort((a,b)=>b.month.localeCompare(a.month)).forEach(r=>{
-    tbody.innerHTML += `<tr>
-      <td>${r.month}</td>
-      <td>${r.name}</td>
-      <td>$${Math.round(r.amount).toLocaleString()}</td>
-    </tr>`;
-    total += parseFloat(r.amount);
-  });
-  totalCell.textContent = "$" + Math.round(total).toLocaleString();
-  avgCell.textContent = "$" + Math.round(total/data.length).toLocaleString();
+    const tbody = document.getElementById("merchantBody");
+    const totalCell = document.getElementById("merchantTotal");
+    const avgCell = document.getElementById("merchantAverage");
+    tbody.innerHTML = "";
+    if(data.length===0){
+        tbody.innerHTML='<tr><td colspan="3" style="text-align:center;">No residuals found.</td></tr>';
+        totalCell.textContent="$0"; avgCell.textContent="$0";
+        return;
+    }
+    let total = 0;
+    data.sort((a,b)=>b.month.localeCompare(a.month)).forEach(r=>{
+        tbody.innerHTML += `<tr>
+            <td>${r.month}</td>
+            <td>${r.name}</td>
+            <td>$${Math.round(r.amount).toLocaleString()}</td>
+        </tr>`;
+        total += parseFloat(r.amount);
+    });
+    totalCell.textContent = "$" + Math.round(total).toLocaleString();
+    avgCell.textContent = "$" + Math.round(total/data.length).toLocaleString();
 }
 
 function renderChart(data){
-  const ctx = document.getElementById('merchantChart').getContext('2d');
-  const labels = data.map(r=>r.month).reverse();
-  const amounts = data.map(r=>Math.round(r.amount)).reverse();
-  let maxValue = Math.max(...amounts,100000);
-  let yMax = Math.ceil(maxValue/100000)*100000;
-  if(chartInstance) chartInstance.destroy();
-  chartInstance = new Chart(ctx,{
-    type:'bar',
-    data:{
-      labels: labels,
-      datasets:[{label:'Residual Income',data:amounts,backgroundColor:'rgba(0,115,170,0.7)',borderColor:'rgba(0,115,170,1)',borderWidth:1}]
-    },
-    options:{
-      responsive:true,
-      scales:{
-        y:{
-          beginAtZero:true,
-          min:0,
-          max:yMax,
-          ticks:{
-            stepSize:100000,
-            callback:function(value){return "$"+value.toLocaleString();}
-          }
+    const ctx = document.getElementById('merchantChart').getContext('2d');
+    const labels = data.map(r=>r.month).reverse();
+    const amounts = data.map(r=>Math.round(r.amount)).reverse();
+    let maxValue = Math.max(...amounts,100000);
+    let yMax = Math.ceil(maxValue/100000)*100000;
+    if(chartInstance) chartInstance.destroy();
+    chartInstance = new Chart(ctx,{
+        type:'bar',
+        data:{
+            labels: labels,
+            datasets:[{label:'Residual Income',data:amounts,backgroundColor:'rgba(0,115,170,0.7)',borderColor:'rgba(0,115,170,1)',borderWidth:1}]
+        },
+        options:{
+            responsive:true,
+            scales:{
+                y:{
+                    beginAtZero:true,
+                    min:0,
+                    max:yMax,
+                    ticks:{
+                        stepSize:100000,
+                        callback:function(value){return "$"+value.toLocaleString();}
+                    }
+                }
+            }
         }
-      }
-    }
-  });
+    });
 }
 </script>
 
