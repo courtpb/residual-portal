@@ -29,8 +29,6 @@ th{background:#0073aa;color:white;}
 
 <h2>Residuals Upload</h2>
 
-<h3>Upload Residual Report</h3>
-
 Residual Month/Year: <input type="month" id="resMonth"><br>
 Residual Name / Bucket: <input type="text" id="resName"><br>
 Upload File: <input type="file" id="resFile"><br>
@@ -49,7 +47,6 @@ Upload File: <input type="file" id="resFile"><br>
 </table>
 
 <script>
-// store uploaded reports in localStorage for demo
 let residualReports = JSON.parse(localStorage.getItem("residualReports") || "[]");
 
 function renderResiduals(){
@@ -69,33 +66,17 @@ function addResidualReport(){
     const month=document.getElementById("resMonth").value;
     const name=document.getElementById("resName").value.trim();
     const file=document.getElementById("resFile").files[0];
-
-    if(!month || !name || !file){
-        alert("Please fill all fields and select a file");
-        return;
-    }
-
-    residualReports.push({
-        month: month,
-        name: name,
-        fileName: file.name
-    });
-
+    if(!month || !name || !file){alert("Fill all fields and select a file");return;}
+    residualReports.push({month,name,fileName:file.name});
     localStorage.setItem("residualReports",JSON.stringify(residualReports));
     renderResiduals();
-
-    // reset fields
     document.getElementById("resMonth").value="";
     document.getElementById("resName").value="";
     document.getElementById("resFile").value="";
 }
 
 function deleteResidual(i){
-    if(confirm("Delete this report?")){
-        residualReports.splice(i,1);
-        localStorage.setItem("residualReports",JSON.stringify(residualReports));
-        renderResiduals();
-    }
+    if(confirm("Delete this report?")){residualReports.splice(i,1);localStorage.setItem("residualReports",JSON.stringify(residualReports));renderResiduals();}
 }
 
 renderResiduals();
