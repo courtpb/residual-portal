@@ -1,95 +1,18 @@
 <!DOCTYPE html>
 <html>
-<head>
-
-<title>My Residuals</title>
-
-<style>
-
-body{
-font-family:Arial;
-background:#f4f6f9;
-padding:40px;
-}
-
-table{
-width:100%;
-border-collapse:collapse;
-background:white;
-}
-
-th,td{
-border:1px solid #ddd;
-padding:8px;
-}
-
-th{
-background:#0073aa;
-color:white;
-}
-
-</style>
-
-</head>
-
+<head><title>My Residuals</title></head>
 <body>
-
+<div class="nav">
+<a href="dashboard.html">Dashboard</a>
+<a href="residuals.html">Residuals</a>
+<a href="sales-reps.html">Sales Reps</a>
+<a href="users.html">Users</a>
+<a href="my-residuals.html">My Residuals</a>
+<a href="merchant-search.html">Merchant Search</a>
+<a href="change-password.html">Change Password</a>
+<a href="index.html" class="logout">Logout</a>
+</div>
 <h2>My Residuals</h2>
-
-Month
-<input type="month" id="month">
-
-<table>
-
-<thead>
-
-<tr>
-<th>Merchant</th>
-<th>Volume</th>
-<th>Residual</th>
-</tr>
-
-</thead>
-
-<tbody id="residualTable"></tbody>
-
-</table>
-
-<script>
-
-let user = JSON.parse(localStorage.getItem("sessionUser"))
-
-let residuals = JSON.parse(localStorage.getItem("residualData") || "[]")
-
-function loadResiduals(){
-
-let table=document.getElementById("residualTable")
-
-table.innerHTML=""
-
-let month=document.getElementById("month").value
-
-let filtered=residuals.filter(r=>user.codes.includes(r.rep))
-
-filtered.forEach(r=>{
-
-let row=document.createElement("tr")
-
-row.innerHTML=`
-<td>${r.merchant}</td>
-<td>${r.volume}</td>
-<td>${r.residual}</td>
-`
-
-table.appendChild(row)
-
-})
-
-}
-
-document.getElementById("month").addEventListener("change",loadResiduals)
-
-</script>
-
+<p>Placeholder: reps see their residuals here.</p>
 </body>
 </html>
