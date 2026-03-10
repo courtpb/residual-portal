@@ -16,7 +16,6 @@ th{background:#0073aa;color:white;}
 .autocomplete-suggestion{padding:5px;cursor:pointer;}
 .autocomplete-suggestion:hover{background:#f0f0f0;}
 .editing{background:#eef;}
-.hidden{display:none;}
 </style>
 </head>
 <body>
@@ -42,9 +41,9 @@ Permission Level:
   <option value="admin">Admin</option>
   <option value="salesrep">Sales Rep</option>
 </select>
-<div id="repContainer">
-Assigned Rep: <input id="userRep" placeholder="Start typing rep name">
-<div id="repSuggestions" class="autocomplete-suggestions"></div>
+<div id="repContainer" style="display:none">
+  Assigned Rep: <input id="userRep" placeholder="Start typing rep name">
+  <div id="repSuggestions" class="autocomplete-suggestions"></div>
 </div>
 <button onclick="addUser()">Add User</button>
 
@@ -68,19 +67,15 @@ Assigned Rep: <input id="userRep" placeholder="Start typing rep name">
 let users = JSON.parse(localStorage.getItem("users") || "[]");
 let salesReps = JSON.parse(localStorage.getItem("salesReps") || "[]");
 
-// Toggle Assigned Rep field based on role
+// Toggle Assigned Rep field
 function toggleRepField(){
     const role = document.getElementById("userRole").value;
     const repContainer = document.getElementById("repContainer");
-    if(role === "admin"){
-        repContainer.classList.add("hidden");
-    } else {
-        repContainer.classList.remove("hidden");
-    }
+    repContainer.style.display = role === "salesrep" ? "block" : "none";
 }
-toggleRepField(); // initial check
+toggleRepField(); // run on page load
 
-// Autocomplete for assigned rep
+// Autocomplete for Assigned Rep
 const repInput = document.getElementById("userRep");
 const suggestionsDiv = document.getElementById("repSuggestions");
 repInput.addEventListener("input", function(){
