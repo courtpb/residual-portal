@@ -10,28 +10,38 @@ body {
     font-family: Arial;
     background: #f4f6f9;
     padding: 20px;
+    font-size: 16px; /* match other pages */
 }
+
+/* Navigation menu */
 .nav a {
     margin-right: 10px;
-    padding: 6px 12px;
+    padding: 8px 14px; /* match other pages */
     background: #0073aa;
     color: white;
     border-radius: 5px;
     text-decoration: none;
-    font-size: 14px;
+    font-size: 16px; /* match other pages */
 }
 .nav a.logout { background: #d00; }
 .nav a:hover { background: #005fd1; }
+
+/* Headings */
 h2 { margin-top: 20px; }
+
+/* Inputs and buttons */
 input[type=text] {
-    padding: 6px;
-    width: 220px;
+    padding: 8px;        /* larger like other pages */
+    font-size: 16px;
+    width: 250px;
     margin-right: 5px;
     border-radius: 4px;
     border: 1px solid #ccc;
 }
+
 button {
-    padding: 6px 12px;
+    padding: 8px 16px;
+    font-size: 16px;
     border-radius: 4px;
     border: none;
     background: #0073aa;
@@ -40,21 +50,34 @@ button {
     margin-top: 5px;
 }
 button:hover { background: #005fd1; }
+
+/* Table styling */
 table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 10px;
+    font-size: 16px; /* match other pages */
     background: white;
-    font-size: 14px;
 }
+
 th, td {
     border: 1px solid #ddd;
-    padding: 6px;
+    padding: 8px; /* larger padding like other pages */
     text-align: left;
 }
 th { background: #0073aa; color: white; }
 .total-row { font-weight: bold; background: #eee; }
-/* Chart canvas uses full width naturally */
+
+/* Chart container */
+.graph-container {
+    width: 100%; /* full width like other pages */
+    margin: 10px 0;
+}
+
+/* Chart labels scaling naturally with page */
+#merchantChart {
+    /* Chart.js handles sizing automatically */
+}
 </style>
 </head>
 <body>
@@ -77,7 +100,7 @@ th { background: #0073aa; color: white; }
   <button onclick="searchMerchant()">Search</button>
 </div>
 
-<div>
+<div class="graph-container">
   <canvas id="merchantChart"></canvas>
 </div>
 
