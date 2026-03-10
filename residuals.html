@@ -3,24 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Import Residuals</title>
+<title>Merchant Search</title>
 <link rel="stylesheet" href="style.css">
-<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-body { font-family: Arial, sans-serif; font-size: 16px; background: #f4f6f9; margin:0; padding:0; }
-header { background: #0073aa; color: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; }
-header h1 { margin:0; font-size:20px; }
+body { font-family: Arial, sans-serif; font-size:16px; background:#f4f6f9; margin:0; padding:0;}
+header { background:#0073aa; color:white; padding:15px 20px; display:flex; justify-content:space-between; align-items:center;}
+header h1{margin:0; font-size:20px;}
 nav a { color:white; text-decoration:none; margin-right:15px; font-weight:bold; font-size:16px; padding: 8px 12px; border-radius:4px; background:#005f99; }
 nav a:hover { background:#004066; }
 main { padding:20px; max-width:1200px; margin:0 auto; }
-form { margin-bottom:20px; display:flex; flex-wrap:wrap; gap:10px; align-items:flex-start; }
-input, select { padding:8px; font-size:16px; width:250px; }
+input { padding:8px; font-size:16px; width:250px; }
 button { padding:8px 12px; font-size:16px; border:none; border-radius:4px; background:#0073aa; color:white; cursor:pointer; }
 button:hover { background:#005fd1; }
-table { width:100%; border-collapse: collapse; margin-top:20px; }
-th, td { border:1px solid #ccc; padding:8px; text-align:left; }
+table { width:100%; border-collapse:collapse; margin-top:20px; }
+th,td { border:1px solid #ccc; padding:8px; text-align:left; }
 th { background:#eaeaea; }
-.checkbox-cell { width:30px; text-align:center; }
 </style>
 </head>
 <body>
@@ -39,132 +37,93 @@ th { background:#eaeaea; }
 </header>
 
 <main>
-<h2>Import Residuals</h2>
-<p>Upload a residual file and assign it a bucket and month/year.</p>
+<h2>Merchant Search</h2>
+<input type="text" id="searchInput" placeholder="Enter Merchant ID or DBA">
+<button onclick="searchMerchant()">Search</button>
 
-<form id="uploadForm">
-    <input type="month" id="residualMonth" required>
-    <select id="residualBucket" required>
-        <option value="">Select Bucket</option>
-        <option value="Bucket 1">Bucket 1</option>
-        <option value="Bucket 2">Bucket 2</option>
-    </select>
-    <input type="file" id="residualFile" accept=".xlsx,.xls" required>
-    <button type="submit">Upload Residual</button>
-</form>
-
-<button onclick="massDelete()" style="margin-bottom:10px;">Delete Selected</button>
-
-<table id="residualsTable">
+<canvas id="merchantChart" style="max-width:100%;height:250px;margin-top:20px;"></canvas>
+<table id="merchantTable">
 <thead>
 <tr>
-    <th class="checkbox-cell"><input type="checkbox" id="selectAll" onclick="toggleAll(this)"></th>
     <th>Month/Year</th>
+    <th>Merchant #</th>
+    <th>DBA</th>
+    <th>Sales Rep ID</th>
+    <th>Residual Total</th>
     <th>Bucket</th>
-    <th>Merchants Count</th>
-    <th>Actions</th>
 </tr>
 </thead>
 <tbody></tbody>
+<tfoot>
+<tr>
+    <td colspan="4"><strong>Total:</strong></td>
+    <td id="merchantTotal"></td>
+    <td></td>
+</tr>
+<tr>
+    <td colspan="4"><strong>Average Monthly:</strong></td>
+    <td id="merchantAverage"></td>
+    <td></td>
+</tr>
+</tfoot>
 </table>
 </main>
 
 <script>
-// Load batches from localStorage
-let residualBatches = JSON.parse(localStorage.getItem("residualBatches")) || [];
+const residualBatches = JSON.parse(localStorage.getItem("residualBatches")) || [];
 
-// Render table
-function renderResiduals(){
-    const tbody = document.querySelector("#residualsTable tbody");
-    tbody.innerHTML = "";
-    residualBatches.forEach((batch,index)=>{
+function searchMerchant(){
+    const query = document.getElementById("searchInput").value.toLowerCase();
+    const allMerchants = [];
+    residualBatches.forEach(batch=>{
+        batch.merchants.forEach(m=>{
+            allMerchants.push({
+                monthYear: m.monthYear,
+                merchant: m.merchant,
+                dba: m.dba,
+                repId: m.repId,
+                total: parseFloat(m.total||0),
+                bucket: batch.bucket
+            });
+        });
+    });
+    const results = allMerchants.filter(m=> m.merchant.toLowerCase().includes(query) || m.dba.toLowerCase().includes(query));
+    
+    const tbody = document.querySelector("#merchantTable tbody");
+    tbody.innerHTML="";
+    let total=0;
+    results.forEach(r=>{
         const tr=document.createElement("tr");
         tr.innerHTML=`
-            <td class="checkbox-cell"><input type="checkbox" class="batch-checkbox"></td>
-            <td>${batch.monthYear}</td>
-            <td>${batch.bucket}</td>
-            <td>${batch.merchants.length}</td>
-            <td><button onclick="deleteBatch(${index})">Delete</button></td>
+            <td>${r.monthYear}</td>
+            <td>${r.merchant}</td>
+            <td>${r.dba}</td>
+            <td>${r.repId}</td>
+            <td>$${r.total.toLocaleString()}</td>
+            <td>${r.bucket}</td>
         `;
+        total+=r.total;
         tbody.appendChild(tr);
     });
-}
+    document.getElementById("merchantTotal").innerText="$"+total.toLocaleString();
+    const months = [...new Set(results.map(r=>r.monthYear))];
+    const avg = months.length ? (total/months.length) : 0;
+    document.getElementById("merchantAverage").innerText="$"+avg.toLocaleString();
 
-// Delete a single batch
-function deleteBatch(index){
-    if(confirm("Delete this batch?")){
-        residualBatches.splice(index,1);
-        localStorage.setItem("residualBatches",JSON.stringify(residualBatches));
-        renderResiduals();
-    }
-}
+    // Chart
+    const totalsByMonth = {};
+    results.forEach(r=> totalsByMonth[r.monthYear] = (totalsByMonth[r.monthYear]||0)+r.total );
+    const sortedMonths = Object.keys(totalsByMonth).sort((a,b)=> new Date(b)-new Date(a));
+    const chartData = sortedMonths.map(m=>totalsByMonth[m]);
 
-// Mass delete
-function massDelete(){
-    const checkboxes = document.querySelectorAll(".batch-checkbox");
-    let toDelete = [];
-    checkboxes.forEach((cb,i)=>{
-        if(cb.checked) toDelete.push(i);
+    const ctx = document.getElementById('merchantChart').getContext('2d');
+    if(window.merchantChart) window.merchantChart.destroy();
+    window.merchantChart = new Chart(ctx,{
+        type:'bar',
+        data:{ labels:sortedMonths, datasets:[{label:'Residual Income',data:chartData,backgroundColor:'rgba(0,115,170,0.7)', borderColor:'rgba(0,115,170,1)',borderWidth:1}]},
+        options:{ responsive:true, scales:{y:{beginAtZero:true, ticks:{ stepSize:100000, callback:v=>"$"+Number(v).toLocaleString() }}} }
     });
-    if(toDelete.length===0) return alert("Select batches to delete.");
-    if(!confirm("Delete selected batches?")) return;
-    // Delete from last index first to avoid shift
-    toDelete.reverse().forEach(i => residualBatches.splice(i,1));
-    localStorage.setItem("residualBatches",JSON.stringify(residualBatches));
-    renderResiduals();
 }
-
-// Select/Deselect all
-function toggleAll(master){
-    const checkboxes = document.querySelectorAll(".batch-checkbox");
-    checkboxes.forEach(cb=>cb.checked = master.checked);
-}
-
-// Handle upload
-document.getElementById("uploadForm").addEventListener("submit", function(e){
-    e.preventDefault();
-    const file = document.getElementById("residualFile").files[0];
-    const monthYear = document.getElementById("residualMonth").value;
-    const bucket = document.getElementById("residualBucket").value;
-    if(!file) return alert("Select a file.");
-
-    const reader = new FileReader();
-    reader.onload = function(e){
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data,{type:"array"});
-        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-        const jsonData = XLSX.utils.sheet_to_json(firstSheet,{header:1});
-
-        // Prepare merchants array
-        let merchants = [];
-        for(let i = 2; i < jsonData.length; i++){ // start at row 3
-            const row = jsonData[i];
-            if(!row || row.length === 0) continue;
-            merchants.push({
-                monthYear: row[0] ? String(row[0]) : monthYear,
-                merchant: row[1] || "",
-                dba: row[2] || "",
-                repId: row[12] || "",  // M
-                total: row[408] || 0   // MP
-            });
-        }
-
-        residualBatches.push({
-            batchId: Date.now(), 
-            monthYear: monthYear,
-            bucket: bucket,
-            merchants: merchants
-        });
-
-        localStorage.setItem("residualBatches",JSON.stringify(residualBatches));
-        renderResiduals();
-        document.getElementById("uploadForm").reset();
-    };
-    reader.readAsArrayBuffer(file);
-});
-
-// Initial render
-renderResiduals();
 </script>
 
 </body>
