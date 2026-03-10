@@ -2,22 +2,17 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Merchant Search</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<title>Change Password</title>
 <style>
-body { font-family: Arial; background: #f4f6f9; padding: 20px; }
-.nav a { margin-right: 10px; padding: 6px 12px; background: #0073aa; color: white; border-radius: 5px; text-decoration: none; font-size: 14px; }
+body { font-family: Arial; background: #f4f6f9; padding: 40px; }
+.nav a { margin-right: 10px; padding: 8px 15px; background: #0073aa; color: white; border-radius: 5px; text-decoration: none; }
 .nav a.logout { background: #d00; }
 .nav a:hover { background: #005fd1; }
 h2 { margin-top: 20px; }
-input[type=text] { padding: 6px; width: 220px; margin-right: 5px; border-radius: 4px; border: 1px solid #ccc; }
-button { padding: 6px 12px; border-radius: 4px; border: none; background: #0073aa; color: white; cursor: pointer; }
+input[type=password] { padding: 8px; width: 250px; margin-bottom: 10px; display: block; border-radius: 4px; border: 1px solid #ccc; }
+button { padding: 8px 15px; border-radius: 4px; border: none; background: #0073aa; color: white; cursor: pointer; margin-top: 5px; }
 button:hover { background: #005fd1; }
-table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; font-size: 14px; }
-th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
-th { background: #0073aa; color: white; }
-.total-row { font-weight: bold; background: #eee; }
-.graph-container { width: 600px; margin: 10px auto; }
+.message { margin-top: 15px; font-weight: bold; }
 </style>
 </head>
 <body>
@@ -33,102 +28,73 @@ th { background: #0073aa; color: white; }
   <a href="index.html" class="logout">Logout</a>
 </div>
 
-<h2>Merchant Search</h2>
+<h2>Change Password</h2>
 
-<div style="margin-bottom:5px;">
-  <input type="text" id="merchantInput" placeholder="Enter Merchant ID or DBA">
-  <button onclick="searchMerchant()">Search</button>
+<div>
+  <label>Current Password:</label>
+  <input type="password" id="currentPassword" placeholder="Enter current password">
+
+  <label>New Password:</label>
+  <input type="password" id="newPassword" placeholder="Enter new password">
+
+  <label>Confirm New Password:</label>
+  <input type="password" id="confirmPassword" placeholder="Confirm new password">
+
+  <button onclick="changePassword()">Update Password</button>
+
+  <div class="message" id="message"></div>
 </div>
-
-<!-- Chart -->
-<div class="graph-container">
-  <canvas id="merchantChart" width="600" height="250"></canvas>
-</div>
-
-<!-- Table -->
-<table id="merchantTable">
-<thead>
-<tr>
-  <th>Month/Year</th>
-  <th>Residual Name</th>
-  <th>Amount</th>
-</tr>
-</thead>
-<tbody id="merchantBody">
-<tr><td colspan="3" style="text-align:center;">No residuals found.</td></tr>
-</tbody>
-<tfoot>
-<tr class="total-row">
-  <td>Total</td>
-  <td colspan="1"></td>
-  <td id="merchantTotal">$0</td>
-</tr>
-<tr class="total-row">
-  <td>Average Monthly</td>
-  <td colspan="1"></td>
-  <td id="merchantAverage">$0</td>
-</tr>
-</tfoot>
-</table>
 
 <script>
-let residuals = [
-  {month:"2026-03", name:"Residual A", amount:150000, merchantId:"M001"},
-  {month:"2026-02", name:"Residual B", amount:200000, merchantId:"M001"},
-  {month:"2026-03", name:"Residual C", amount:120000, merchantId:"M002"},
-  {month:"2026-01", name:"Residual D", amount:180000, merchantId:"M001"}
-];
+// Demo: simulate logged-in user
+let currentUser = JSON.parse(localStorage.getItem("currentUser") || '{"username":"admin","password":"admin123"}');
 
-let chartInstance;
-
-function searchMerchant(){
-  const merchantId = document.getElementById("merchantInput").value.trim();
-  if(!merchantId){ alert("Please enter a Merchant ID or DBA"); return; }
-  const filtered = residuals.filter(r => r.merchantId.toLowerCase() === merchantId.toLowerCase());
-  renderTable(filtered);
-  renderChart(filtered);
+// For demo, we’ll store users here
+if(!localStorage.getItem("users")){
+  localStorage.setItem("users", JSON.stringify([currentUser]));
 }
 
-function renderTable(data){
-  const tbody = document.getElementById("merchantBody");
-  const totalCell = document.getElementById("merchantTotal");
-  const avgCell = document.getElementById("merchantAverage");
-  tbody.innerHTML = "";
-  if(data.length===0){
-    tbody.innerHTML='<tr><td colspan="3" style="text-align:center;">No residuals found.</td></tr>';
-    totalCell.textContent="$0"; avgCell.textContent="$0"; return;
+function changePassword(){
+  const current = document.getElementById("currentPassword").value.trim();
+  const newPass = document.getElementById("newPassword").value.trim();
+  const confirm = document.getElementById("confirmPassword").value.trim();
+  const msg = document.getElementById("message");
+
+  if(!current || !newPass || !confirm){
+    msg.style.color = "red";
+    msg.textContent = "Please fill in all fields.";
+    return;
   }
-  let total = 0;
-  data.sort((a,b)=>b.month.localeCompare(a.month)).forEach(r=>{
-    tbody.innerHTML += `<tr>
-      <td>${r.month}</td>
-      <td>${r.name}</td>
-      <td>$${Math.round(r.amount).toLocaleString()}</td>
-    </tr>`;
-    total += parseFloat(r.amount);
-  });
-  totalCell.textContent = "$" + Math.round(total).toLocaleString();
-  avgCell.textContent = "$" + Math.round(total/data.length).toLocaleString();
-}
 
-function renderChart(data){
-  const ctx = document.getElementById('merchantChart').getContext('2d');
-  const labels = data.map(r=>r.month).reverse();
-  const amounts = data.map(r=>Math.round(r.amount)).reverse();
-  let maxValue = Math.max(...amounts,100000);
-  let yMax = Math.ceil(maxValue/100000)*100000;
-  if(chartInstance) chartInstance.destroy();
-  chartInstance = new Chart(ctx,{
-    type:'bar',
-    data:{
-      labels: labels,
-      datasets:[{label:'Residual Income',data:amounts,backgroundColor:'rgba(0,115,170,0.7)',borderColor:'rgba(0,115,170,1)',borderWidth:1}]
-    },
-    options:{
-      responsive:true,
-      scales:{y:{beginAtZero:true,min:0,max:yMax,ticks:{stepSize:100000,callback:function(value){return "$"+value.toLocaleString();}}}}
-    }
-  });
+  if(current !== currentUser.password){
+    msg.style.color = "red";
+    msg.textContent = "Current password is incorrect.";
+    return;
+  }
+
+  if(newPass !== confirm){
+    msg.style.color = "red";
+    msg.textContent = "New passwords do not match.";
+    return;
+  }
+
+  // Update password
+  currentUser.password = newPass;
+
+  // Update in stored users
+  let users = JSON.parse(localStorage.getItem("users") || "[]");
+  let index = users.findIndex(u => u.username === currentUser.username);
+  if(index !== -1){ users[index].password = newPass; }
+  localStorage.setItem("users", JSON.stringify(users));
+  localStorage.setItem("currentUser", JSON.stringify(currentUser));
+
+  msg.style.color = "green";
+  msg.textContent = "Password updated successfully!";
+
+  // Clear input fields
+  document.getElementById("currentPassword").value = "";
+  document.getElementById("newPassword").value = "";
+  document.getElementById("confirmPassword").value = "";
 }
 </script>
 
