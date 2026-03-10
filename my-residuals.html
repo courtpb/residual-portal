@@ -1,152 +1,136 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>My Residuals</title>
+<link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-body{font-family:Arial;background:#f4f6f9;padding:40px;}
-.nav a{margin-right:10px;padding:8px 15px;background:#0073aa;color:white;border-radius:5px;text-decoration:none;}
-.nav a.logout{background:#d00;}
-.nav a:hover{background:#005fd1;}
-h2{margin-top:20px;}
-table{width:100%;border-collapse:collapse;margin-top:20px;background:white;}
-th,td{border:1px solid #ddd;padding:8px;text-align:left;}
-th{background:#0073aa;color:white;}
-.total-row{font-weight:bold;background:#eee;}
-.graph-container{width:600px;margin:0 auto;}
+body { font-family: Arial, sans-serif; font-size:16px; background:#f4f6f9; margin:0; padding:0;}
+header { background:#0073aa; color:white; padding:15px 20px; display:flex; justify-content:space-between; align-items:center;}
+header h1{margin:0; font-size:20px;}
+nav a { color:white; text-decoration:none; margin-right:15px; font-weight:bold; font-size:16px; padding: 8px 12px; border-radius:4px; background:#005f99; }
+nav a:hover { background:#004066; }
+main { padding:20px; max-width:1200px; margin:0 auto; }
+table { width:100%; border-collapse:collapse; margin-top:20px; }
+th,td { border:1px solid #ccc; padding:8px; text-align:left; }
+th { background:#eaeaea; }
 </style>
 </head>
 <body>
 
-<div class="nav">
-  <a href="dashboard.html">Dashboard</a>
-  <a href="residuals.html">Residuals</a>
-  <a href="sales-reps.html">Sales Reps</a>
-  <a href="users.html">Users</a>
-  <a href="my-residuals.html">My Residuals</a>
-  <a href="merchant-search.html">Merchant Search</a>
-  <a href="change-password.html">Change Password</a>
-  <a href="index.html" class="logout">Logout</a>
-</div>
+<header>
+<h1>Residual Portal</h1>
+<nav>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="residuals.html">Residuals</a>
+    <a href="sales-reps.html">Sales Reps</a>
+    <a href="users.html">Users</a>
+    <a href="merchant-search.html">Merchant Search</a>
+    <a href="change-password.html">Change Password</a>
+    <a href="index.html">Logout</a>
+</nav>
+</header>
 
+<main>
 <h2>My Residuals</h2>
-
-<!-- Graph -->
-<div class="graph-container">
-    <canvas id="residualChart" width="600" height="300"></canvas>
-</div>
-
-<!-- Residual Table -->
+<canvas id="residualChart" style="max-width:100%;height:250px;"></canvas>
 <table id="residualTable">
 <thead>
 <tr>
-<th>Month/Year</th>
-<th>Residual Name</th>
-<th>Rep</th>
-<th>Amount</th>
+    <th>Month/Year</th>
+    <th>Merchant #</th>
+    <th>DBA</th>
+    <th>Sales Rep ID</th>
+    <th>Residual Total</th>
+    <th>Bucket</th>
 </tr>
 </thead>
-<tbody id="residualBody">
-<tr><td colspan="4" style="text-align:center;">No residuals available.</td></tr>
-</tbody>
+<tbody></tbody>
 <tfoot>
-<tr class="total-row">
-<td colspan="3">Total</td>
-<td id="residualTotal">$0</td>
+<tr>
+    <td colspan="4"><strong>Total:</strong></td>
+    <td id="grandTotal"></td>
+    <td></td>
 </tr>
 </tfoot>
 </table>
+</main>
 
 <script>
-// Current logged-in user example
-let currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}");
+// === Adjust this for your login system ===
+const currentUser = {
+    role: 'salesrep', // 'admin' or 'salesrep'
+    repId: 'REP1'     // sales rep ID for filtering
+};
 
-// Example residuals data
-let residuals = JSON.parse(localStorage.getItem("residuals") || "[]");
-
-// Filter residuals by user role
-function getVisibleResiduals(){
-    if(currentUser.role === "admin"){
-        return residuals;
-    } else if(currentUser.role === "salesrep"){
-        return residuals.filter(r => r.rep === currentUser.rep);
-    } else {
-        return [];
-    }
-}
-
-// Sort residuals descending by month
-function sortResiduals(residualsArr){
-    return residualsArr.sort((a,b)=>b.month.localeCompare(a.month));
-}
-
-// Render table
-function renderResiduals(){
-    const tbody = document.getElementById("residualBody");
-    const totalCell = document.getElementById("residualTotal");
-    const visibleResiduals = sortResiduals(getVisibleResiduals());
-    tbody.innerHTML = "";
-    if(visibleResiduals.length === 0){
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No residuals available.</td></tr>';
-        totalCell.textContent = "$0";
-        return;
-    }
-    let total = 0;
-    visibleResiduals.forEach(r=>{
-        tbody.innerHTML += `<tr>
-            <td>${r.month}</td>
-            <td>${r.name}</td>
-            <td>${r.rep}</td>
-            <td>$${Math.round(r.amount).toLocaleString()}</td>
-        </tr>`;
-        total += parseFloat(r.amount);
+// Load all residuals
+const residualBatches = JSON.parse(localStorage.getItem("residualBatches")) || [];
+let allMerchants = [];
+residualBatches.forEach(batch => {
+    batch.merchants.forEach(m => {
+        allMerchants.push({
+            monthYear: m.monthYear,
+            merchant: m.merchant,
+            dba: m.dba,
+            repId: m.repId,
+            total: m.total,
+            bucket: batch.bucket
+        });
     });
-    totalCell.textContent = "$" + Math.round(total).toLocaleString();
-}
+});
 
-// Render chart with Y-axis increments of 100k
-function renderChart(){
-    const ctx = document.getElementById('residualChart').getContext('2d');
-    const visibleResiduals = sortResiduals(getVisibleResiduals());
-    const labels = visibleResiduals.map(r=>r.month).reverse(); // oldest to newest
-    const data = visibleResiduals.map(r=>Math.round(r.amount)).reverse();
+// Filter for current user
+let visibleMerchants = currentUser.role === 'admin' ? allMerchants : allMerchants.filter(m => m.repId === currentUser.repId);
 
-    // Calculate Y-axis max (round up to nearest 100k)
-    let maxValue = Math.max(...data, 100000); // ensure at least 100k if no data
-    let yMax = Math.ceil(maxValue / 100000) * 100000;
+// Aggregate totals per month for chart
+const totalsByMonth = {};
+visibleMerchants.forEach(m => {
+    totalsByMonth[m.monthYear] = (totalsByMonth[m.monthYear] || 0) + parseFloat(m.total || 0);
+});
 
-    new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Residual Income',
-                data: data,
-                backgroundColor: 'rgba(0,115,170,0.7)',
-                borderColor: 'rgba(0,115,170,1)',
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive:true,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    min: 0,
-                    max: yMax,
-                    ticks: {
-                        stepSize: 100000,
-                        callback: function(value){ return "$" + value.toLocaleString(); }
-                    }
-                }
-            }
+// Prepare chart
+const ctx = document.getElementById('residualChart').getContext('2d');
+const sortedMonths = Object.keys(totalsByMonth).sort((a,b)=> new Date(b) - new Date(a)); // newest to oldest
+const chartData = sortedMonths.map(m=>totalsByMonth[m]);
+new Chart(ctx, {
+    type:'bar',
+    data:{
+        labels:sortedMonths,
+        datasets:[{
+            label:'Residual Income',
+            data:chartData,
+            backgroundColor:'rgba(0,115,170,0.7)',
+            borderColor:'rgba(0,115,170,1)',
+            borderWidth:1
+        }]
+    },
+    options:{
+        responsive:true,
+        scales:{
+            y:{ beginAtZero:true, ticks:{ stepSize:100000, callback: v=>"$"+Number(v).toLocaleString() } }
         }
-    });
-}
+    }
+});
 
-// Initial render
-renderResiduals();
-renderChart();
+// Populate table
+const tbody = document.querySelector("#residualTable tbody");
+let grandTotal=0;
+visibleMerchants.forEach(m=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+        <td>${m.monthYear}</td>
+        <td>${m.merchant}</td>
+        <td>${m.dba}</td>
+        <td>${m.repId}</td>
+        <td>$${Number(m.total).toLocaleString()}</td>
+        <td>${m.bucket}</td>
+    `;
+    grandTotal += parseFloat(m.total || 0);
+    tbody.appendChild(tr);
+});
+document.getElementById("grandTotal").innerText="$"+grandTotal.toLocaleString();
 </script>
 
 </body>
