@@ -72,18 +72,21 @@ th{background:#ecf0f1;}
 </div>
 
 <script>
+function excelDateToMMYYYY(serial){
+    let date = new Date((serial - 25569) * 86400 * 1000)
+    return (date.getMonth()+1) + "/" + date.getFullYear()
+}
+
 function loadBatches(){
     let batches = JSON.parse(localStorage.getItem("residualBatches")) || []
     let tbody = document.querySelector("#batchTable tbody")
     tbody.innerHTML=""
     batches.forEach((batch,i)=>{
         let row = document.createElement("tr")
-        row.innerHTML = `
-        <td><input type="checkbox" data-index="${i}"></td>
-        <td>${batch.month}</td>
-        <td>${batch.bucket}</td>
-        <td>${batch.merchants.length}</td>
-        `
+        row.innerHTML = `<td><input type="checkbox" data-index="${i}"></td>
+                        <td>${batch.month}</td>
+                        <td>${batch.bucket}</td>
+                        <td>${batch.merchants.length}</td>`
         tbody.appendChild(row)
     })
 }
@@ -92,7 +95,6 @@ function importFile(){
     let file = document.getElementById("fileUpload").files[0]
     let month = document.getElementById("residualMonth").value
     let bucket = document.getElementById("bucket").value
-
     if(!file){ alert("Please upload a file"); return }
 
     let reader = new FileReader()
@@ -104,28 +106,27 @@ function importFile(){
         let range = XLSX.utils.decode_range(sheet['!ref'])
         let merchants = []
 
-        for(let R=2; R<=range.e.r; ++R){ // start at row 3
-            let monthCell = sheet[XLSX.utils.encode_cell({r:R,c:0})] // column A
-            let merchantCell = sheet[XLSX.utils.encode_cell({r:R,c:1})] // column B
-            let dbaCell = sheet[XLSX.utils.encode_cell({r:R,c:2})] // column C
-            let repCell = sheet[XLSX.utils.encode_cell({r:R,c:12})] // column M
-            let totalCell = sheet[XLSX.utils.encode_cell({r:R,c:407})] // column MP
+        for(let R=2; R<=range.e.r; ++R){ // row 3
+            let monthCell = sheet['A'+(R+1)]
+            let merchantCell = sheet['B'+(R+1)]
+            let dbaCell = sheet['C'+(R+1)]
+            let repCell = sheet['M'+(R+1)]
+            let totalCell = sheet['MP'+(R+1)] // <- MP column
 
             if(!merchantCell) continue
 
-            // Convert Excel serial date to MM/YYYY
+            // Convert Excel serial date
             let monthYear = ""
             if(monthCell && monthCell.v){
                 if(typeof monthCell.v === "number"){
-                    let date = new Date((monthCell.v - 25569)*86400*1000)
-                    monthYear = (date.getMonth()+1)+"/"+date.getFullYear()
+                    monthYear = excelDateToMMYYYY(monthCell.v)
                 } else { monthYear = monthCell.v }
             }
 
             let merchant = merchantCell.v || ""
             let dba = dbaCell ? dbaCell.v : ""
             let repId = repCell ? repCell.v : ""
-            let residual = totalCell ? parseFloat(totalCell.v) : 0
+            let residual = totalCell && !isNaN(totalCell.v) ? parseFloat(totalCell.v) : 0
 
             merchants.push({
                 monthYear:monthYear,
@@ -148,7 +149,6 @@ function importFile(){
         loadBatches()
         alert("Residual file imported successfully")
     }
-
     reader.readAsArrayBuffer(file)
 }
 
