@@ -3,66 +3,73 @@
 <head>
 <title>Dashboard</title>
 <style>
-body { font-family: Arial; background:#f4f6f9; padding:40px;}
-.nav a {margin-right:10px; padding:8px 15px; background:#0073aa; color:white; border-radius:5px; text-decoration:none;}
-.nav a.logout {background:#d00;}
-.nav a:hover {background:#005fd1;}
-table {width:100%; border-collapse: collapse; margin-top:20px; background:white; border-radius:6px; overflow:hidden;}
-th, td {border:1px solid #ddd; padding:8px; text-align:left;}
-th {background:#0073aa; color:white;}
-input {padding:5px;}
+body{font-family:Arial;background:#f4f6f9;padding:40px;}
+.nav a{margin-right:10px;padding:8px 15px;background:#0073aa;color:white;border-radius:5px;text-decoration:none;}
+.nav a.logout{background:#d00;}
+.nav a:hover{background:#005fd1;}
+table{width:100%;border-collapse:collapse;margin-top:20px;background:white;}
+th,td{border:1px solid #ddd;padding:8px;text-align:left;}
+th{background:#0073aa;color:white;}
 </style>
 </head>
 <body>
 
+<!-- NAVIGATION -->
 <div class="nav">
-  <a href="dashboard.html">Dashboard</a>
-  <a href="residuals.html">Residuals</a>
-  <a href="sales-reps.html">Sales Reps</a>
-  <a href="index.html" class="logout">Logout</a>
+<a href="dashboard.html">Dashboard</a>
+<a href="residuals.html">Residuals</a>
+<a href="sales-reps.html">Sales Reps</a>
+<a href="users.html">Users</a>
+<a href="my-residuals.html">My Residuals</a>
+<a href="merchant-search.html">Merchant Search</a>
+<a href="change-password.html">Change Password</a>
+<a href="index.html" class="logout">Logout</a>
 </div>
 
 <h2>Dashboard</h2>
+<p>Welcome to your portal! Here you can see summary info.</p>
 
-<h3>Agent Residual Summary</h3>
-Month/Year: <input type="month" id="dashMonth" onchange="renderDashboard()">
-
+<!-- Example Dashboard Table -->
 <table>
 <thead>
 <tr>
-  <th>Agent Name</th>
-  <th>Processing Volume</th>
-  <th>Residual Income</th>
+<th>Agent</th>
+<th>Processing Volume</th>
+<th>Residual Income</th>
+<th>Month</th>
 </tr>
 </thead>
-<tbody id="dashboardBody"></tbody>
+<tbody id="dashboardBody">
+<!-- Data will be dynamically inserted -->
+</tbody>
 </table>
 
 <script>
-let residuals = JSON.parse(localStorage.getItem("residuals") || "[]");
+let residuals = JSON.parse(localStorage.getItem("residualData") || "[]");
 let reps = JSON.parse(localStorage.getItem("salesReps") || "[]");
 
-function renderDashboard(){
-  let tbody = document.getElementById("dashboardBody");
-  tbody.innerHTML = "";
-  let selectedMonth = document.getElementById("dashMonth").value;
-
-  reps.forEach(rep=>{
-    let agentName = rep.firstName + " " + rep.lastName;
-    let filtered = residuals.filter(r=>r.month === selectedMonth && r.who.includes(rep.firstName));
-    let totalResidual = 0;
-    filtered.forEach(r=>{
-      rep.codes.forEach(c=>{
-        totalResidual += (c.split/100)*0; // Placeholder for actual residual amounts
-      });
+function renderDashboard(monthFilter="") {
+    const tbody = document.getElementById("dashboardBody");
+    tbody.innerHTML="";
+    reps.forEach(rep=>{
+        let totalVolume=0, totalResidual=0;
+        residuals.forEach(r=>{
+            if(rep.codes.some(c=>c.code===r.rep)){
+                if(!monthFilter || r.month===monthFilter){
+                    totalVolume+=parseFloat(r.volume);
+                    totalResidual+=parseFloat(r.residual);
+                }
+            }
+        });
+        const tr=document.createElement("tr");
+        tr.innerHTML=`<td>${rep.firstName} ${rep.lastName}</td>
+                      <td>$${totalVolume}</td>
+                      <td>$${totalResidual}</td>
+                      <td>${monthFilter || "All Months"}</td>`;
+        tbody.appendChild(tr);
     });
-    let tr = document.createElement("tr");
-    tr.innerHTML = `<td>${agentName}</td><td>—</td><td>$${totalResidual.toFixed(2)}</td>`;
-    tbody.appendChild(tr);
-  });
 }
 
-// Initial render
 renderDashboard();
 </script>
 
