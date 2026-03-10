@@ -4,214 +4,124 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Merchant Search</title>
+<link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-/* === Container for consistent layout === */
-.container {
-    max-width: 1200px;  /* match your other pages */
-    margin: 0 auto;     /* center content horizontally */
-    padding: 20px;      /* consistent padding */
-}
-
-/* === Global styles from other pages === */
-body {
-    font-family: Arial, sans-serif;
-    font-size: 18px;
-    background-color: #f4f6f9;
-    margin: 0;
-}
-
-/* Navigation menu */
-.nav {
-    margin-bottom: 20px;
-}
-.nav a {
-    display: inline-block;
-    margin-right: 10px;
-    padding: 10px 16px;
-    background-color: #0073aa;
-    color: #fff;
-    border-radius: 4px;
-    text-decoration: none;
-    font-size: 16px;
-}
-.nav a.logout { background-color: #d00; }
-.nav a:hover { background-color: #005fd1; }
-
-/* Headings */
-h2 {
-    margin-top: 20px;
-}
-
-/* Inputs/buttons */
-input[type=text] {
-    padding: 10px;
-    font-size: 16px;
-    width: 280px;
-    border-radius: 4px;
-    border: 1px solid #ccc;
-}
-button {
-    padding: 10px 16px;
-    font-size: 16px;
-    border: none;
-    border-radius: 4px;
-    background-color: #0073aa;
-    color: white;
-    cursor: pointer;
-    margin-top: 5px;
-}
-button:hover { background-color: #005fd1; }
-
-/* Tables */
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-    font-size: 16px;
-    background: #fff;
-}
-th, td {
-    border: 1px solid #ddd;
-    padding: 10px;
-    text-align: left;
-}
-th {
-    background-color: #0073aa;
-    color: #fff;
-}
-.total-row {
-    font-weight: bold;
-    background-color: #eee;
-}
-
-/* Chart container */
-.graph-container {
-    width: 100%;
-    margin-top: 20px;
-}
+body { font-family: Arial, sans-serif; font-size:16px; background:#f4f6f9; margin:0; padding:0;}
+header { background:#0073aa; color:white; padding:15px 20px; display:flex; justify-content:space-between; align-items:center;}
+header h1{margin:0; font-size:20px;}
+nav a { color:white; text-decoration:none; margin-right:15px; font-weight:bold; font-size:16px; padding: 8px 12px; border-radius:4px; background:#005f99; }
+nav a:hover { background:#004066; }
+main { padding:20px; max-width:1200px; margin:0 auto; }
+input { padding:8px; font-size:16px; width:250px; }
+button { padding:8px 12px; font-size:16px; border:none; border-radius:4px; background:#0073aa; color:white; cursor:pointer; }
+button:hover { background:#005fd1; }
+table { width:100%; border-collapse:collapse; margin-top:20px; }
+th,td { border:1px solid #ccc; padding:8px; text-align:left; }
+th { background:#eaeaea; }
 </style>
 </head>
 <body>
 
-<div class="container">
-  <div class="nav">
+<header>
+<h1>Residual Portal</h1>
+<nav>
     <a href="dashboard.html">Dashboard</a>
     <a href="residuals.html">Residuals</a>
     <a href="sales-reps.html">Sales Reps</a>
     <a href="users.html">Users</a>
-    <a href="my-residuals.html">My Residuals</a>
     <a href="merchant-search.html">Merchant Search</a>
     <a href="change-password.html">Change Password</a>
-    <a href="index.html" class="logout">Logout</a>
-  </div>
+    <a href="index.html">Logout</a>
+</nav>
+</header>
 
-  <h2>Merchant Search</h2>
+<main>
+<h2>Merchant Search</h2>
+<input type="text" id="searchInput" placeholder="Enter Merchant ID or DBA">
+<button onclick="searchMerchant()">Search</button>
 
-  <div>
-      <input type="text" id="merchantInput" placeholder="Enter Merchant ID or DBA">
-      <button onclick="searchMerchant()">Search</button>
-  </div>
-
-  <div class="graph-container">
-      <canvas id="merchantChart"></canvas>
-  </div>
-
-  <table id="merchantTable">
-  <thead>
-  <tr>
-      <th>Month/Year</th>
-      <th>Residual Name</th>
-      <th>Amount</th>
-  </tr>
-  </thead>
-  <tbody id="merchantBody">
-  <tr><td colspan="3" style="text-align:center;">No residuals found.</td></tr>
-  </tbody>
-  <tfoot>
-  <tr class="total-row">
-      <td>Total</td>
-      <td colspan="1"></td>
-      <td id="merchantTotal">$0</td>
-  </tr>
-  <tr class="total-row">
-      <td>Average Monthly</td>
-      <td colspan="1"></td>
-      <td id="merchantAverage">$0</td>
-  </tr>
-  </tfoot>
-  </table>
-</div>
+<canvas id="merchantChart" style="max-width:100%;height:250px;margin-top:20px;"></canvas>
+<table id="merchantTable">
+<thead>
+<tr>
+    <th>Month/Year</th>
+    <th>Merchant #</th>
+    <th>DBA</th>
+    <th>Sales Rep ID</th>
+    <th>Residual Total</th>
+    <th>Bucket</th>
+</tr>
+</thead>
+<tbody></tbody>
+<tfoot>
+<tr>
+    <td colspan="4"><strong>Total:</strong></td>
+    <td id="merchantTotal"></td>
+    <td></td>
+</tr>
+<tr>
+    <td colspan="4"><strong>Average Monthly:</strong></td>
+    <td id="merchantAverage"></td>
+    <td></td>
+</tr>
+</tfoot>
+</table>
+</main>
 
 <script>
-// Sample residual data
-let residuals = [
-  {month:"2026-03", name:"Residual A", amount:150000, merchantId:"M001"},
-  {month:"2026-02", name:"Residual B", amount:200000, merchantId:"M001"},
-  {month:"2026-03", name:"Residual C", amount:120000, merchantId:"M002"},
-  {month:"2026-01", name:"Residual D", amount:180000, merchantId:"M001"}
-];
-
-let chartInstance;
+const residualBatches = JSON.parse(localStorage.getItem("residualBatches")) || [];
 
 function searchMerchant(){
-    const merchantId = document.getElementById("merchantInput").value.trim();
-    if(!merchantId){ alert("Please enter a Merchant ID or DBA"); return; }
-    const filtered = residuals.filter(r => r.merchantId.toLowerCase() === merchantId.toLowerCase());
-    renderTable(filtered);
-    renderChart(filtered);
-}
-
-function renderTable(data){
-    const tbody = document.getElementById("merchantBody");
-    const totalCell = document.getElementById("merchantTotal");
-    const avgCell = document.getElementById("merchantAverage");
-    tbody.innerHTML = "";
-    if(data.length===0){
-        tbody.innerHTML='<tr><td colspan="3" style="text-align:center;">No residuals found.</td></tr>';
-        totalCell.textContent="$0"; avgCell.textContent="$0";
-        return;
-    }
-    let total = 0;
-    data.sort((a,b)=>b.month.localeCompare(a.month)).forEach(r=>{
-        tbody.innerHTML += `<tr>
-            <td>${r.month}</td>
-            <td>${r.name}</td>
-            <td>$${Math.round(r.amount).toLocaleString()}</td>
-        </tr>`;
-        total += parseFloat(r.amount);
+    const query = document.getElementById("searchInput").value.toLowerCase();
+    const allMerchants = [];
+    residualBatches.forEach(batch=>{
+        batch.merchants.forEach(m=>{
+            allMerchants.push({
+                monthYear: m.monthYear,
+                merchant: m.merchant,
+                dba: m.dba,
+                repId: m.repId,
+                total: parseFloat(m.total||0),
+                bucket: batch.bucket
+            });
+        });
     });
-    totalCell.textContent = "$" + Math.round(total).toLocaleString();
-    avgCell.textContent = "$" + Math.round(total/data.length).toLocaleString();
-}
+    const results = allMerchants.filter(m=> m.merchant.toLowerCase().includes(query) || m.dba.toLowerCase().includes(query));
+    
+    const tbody = document.querySelector("#merchantTable tbody");
+    tbody.innerHTML="";
+    let total=0;
+    results.forEach(r=>{
+        const tr=document.createElement("tr");
+        tr.innerHTML=`
+            <td>${r.monthYear}</td>
+            <td>${r.merchant}</td>
+            <td>${r.dba}</td>
+            <td>${r.repId}</td>
+            <td>$${r.total.toLocaleString()}</td>
+            <td>${r.bucket}</td>
+        `;
+        total+=r.total;
+        tbody.appendChild(tr);
+    });
+    document.getElementById("merchantTotal").innerText="$"+total.toLocaleString();
+    const months = [...new Set(results.map(r=>r.monthYear))];
+    const avg = months.length ? (total/months.length) : 0;
+    document.getElementById("merchantAverage").innerText="$"+avg.toLocaleString();
 
-function renderChart(data){
+    // Chart
+    const totalsByMonth = {};
+    results.forEach(r=> totalsByMonth[r.monthYear] = (totalsByMonth[r.monthYear]||0)+r.total );
+    const sortedMonths = Object.keys(totalsByMonth).sort((a,b)=> new Date(b)-new Date(a));
+    const chartData = sortedMonths.map(m=>totalsByMonth[m]);
+
     const ctx = document.getElementById('merchantChart').getContext('2d');
-    const labels = data.map(r=>r.month).reverse();
-    const amounts = data.map(r=>Math.round(r.amount)).reverse();
-    let maxValue = Math.max(...amounts,100000);
-    let yMax = Math.ceil(maxValue/100000)*100000;
-    if(chartInstance) chartInstance.destroy();
-    chartInstance = new Chart(ctx,{
+    if(window.merchantChart) window.merchantChart.destroy();
+    window.merchantChart = new Chart(ctx,{
         type:'bar',
-        data:{
-            labels: labels,
-            datasets:[{label:'Residual Income',data:amounts,backgroundColor:'rgba(0,115,170,0.7)',borderColor:'rgba(0,115,170,1)',borderWidth:1}]
-        },
-        options:{
-            responsive:true,
-            scales:{
-                y:{
-                    beginAtZero:true,
-                    min:0,
-                    max:yMax,
-                    ticks:{
-                        stepSize:100000,
-                        callback:function(value){return "$"+value.toLocaleString();}
-                    }
-                }
-            }
-        }
+        data:{ labels:sortedMonths, datasets:[{label:'Residual Income',data:chartData,backgroundColor:'rgba(0,115,170,0.7)', borderColor:'rgba(0,115,170,1)',borderWidth:1}]},
+        options:{ responsive:true, scales:{y:{beginAtZero:true, ticks:{ stepSize:100000, callback:v=>"$"+Number(v).toLocaleString() }}} }
     });
 }
 </script>
