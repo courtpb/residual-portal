@@ -8,7 +8,10 @@ body{font-family:Arial;background:#f4f6f9;padding:40px;}
 .nav a.logout{background:#d00;}
 .nav a:hover{background:#005fd1;}
 h2{margin-top:20px;}
-p{margin-top:10px;}
+input,select,button{padding:5px;margin:3px;}
+table{width:100%;border-collapse:collapse;margin-top:20px;background:white;}
+th,td{border:1px solid #ddd;padding:8px;text-align:left;}
+th{background:#0073aa;color:white;}
 </style>
 </head>
 <body>
@@ -25,24 +28,94 @@ p{margin-top:10px;}
   <a href="index.html" class="logout">Logout</a>
 </div>
 
-<!-- PAGE CONTENT -->
 <h2>Users</h2>
 <p>Create portal users with limited view permissions here.</p>
 
-<!-- Placeholder table for users -->
-<table border="1" style="margin-top:20px;width:100%;border-collapse:collapse;background:white;">
+<!-- USER CREATION FORM -->
+<h3>Add New User</h3>
+Email / Username: <input id="userEmail" placeholder="user@example.com">
+Permission Level: 
+<select id="userRole">
+  <option value="admin">Admin</option>
+  <option value="salesrep">Sales Rep</option>
+</select>
+Assigned Rep: <input id="userRep" placeholder="Rep Name (optional)">
+<button onclick="addUser()">Add User</button>
+
+<!-- USER TABLE -->
+<table>
 <thead>
-<tr style="background:#0073aa;color:white;">
-  <th>Username / Email</th>
-  <th>Permission Level</th>
-  <th>Assigned Rep</th>
-  <th>Actions</th>
+<tr>
+<th>Username / Email</th>
+<th>Permission Level</th>
+<th>Assigned Rep</th>
+<th>Actions</th>
 </tr>
 </thead>
 <tbody id="usersBody">
 <tr><td colspan="4" style="text-align:center;">No users added yet.</td></tr>
 </tbody>
 </table>
+
+<script>
+// load users from localStorage or initialize empty
+let users = JSON.parse(localStorage.getItem("users") || "[]");
+
+function renderUsers(){
+    const tbody = document.getElementById("usersBody");
+    tbody.innerHTML = "";
+    if(users.length===0){
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No users added yet.</td></tr>';
+        return;
+    }
+    users.forEach((u,i)=>{
+        tbody.innerHTML += `<tr>
+            <td>${u.email}</td>
+            <td>${u.role}</td>
+            <td>${u.rep}</td>
+            <td>
+                <button onclick="editUser(${i})">Edit</button>
+                <button onclick="deleteUser(${i})">Delete</button>
+            </td>
+        </tr>`;
+    });
+}
+
+function addUser(){
+    const email = document.getElementById("userEmail").value.trim();
+    const role = document.getElementById("userRole").value;
+    const rep = document.getElementById("userRep").value.trim();
+    if(!email){alert("Enter email"); return;}
+    users.push({email,role,rep});
+    localStorage.setItem("users",JSON.stringify(users));
+    document.getElementById("userEmail").value="";
+    document.getElementById("userRep").value="";
+    renderUsers();
+}
+
+function deleteUser(i){
+    if(confirm("Delete this user?")){
+        users.splice(i,1);
+        localStorage.setItem("users",JSON.stringify(users));
+        renderUsers();
+    }
+}
+
+function editUser(i){
+    const u = users[i];
+    const newEmail = prompt("Edit Email:", u.email);
+    if(newEmail) u.email = newEmail;
+    const newRole = prompt("Edit Role (admin/salesrep):", u.role);
+    if(newRole) u.role = newRole;
+    const newRep = prompt("Edit Assigned Rep:", u.rep);
+    if(newRep !== null) u.rep = newRep;
+    localStorage.setItem("users",JSON.stringify(users));
+    renderUsers();
+}
+
+// initial render
+renderUsers();
+</script>
 
 </body>
 </html>
