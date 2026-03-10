@@ -4,121 +4,111 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>My Residuals</title>
-<link rel="stylesheet" href="style.css">
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <style>
-body { font-family: Arial, sans-serif; font-size:16px; background:#f4f6f9; margin:0; padding:0;}
-header { background:#0073aa; color:white; padding:15px 20px; display:flex; justify-content:space-between; align-items:center;}
-header h1{margin:0; font-size:20px;}
-nav a { color:white; text-decoration:none; margin-right:15px; font-weight:bold; font-size:16px; padding: 8px 12px; border-radius:4px; background:#005f99; }
-nav a:hover { background:#004066; }
-main { padding:20px; max-width:1200px; margin:0 auto; }
-table { width:100%; border-collapse:collapse; margin-top:20px; }
-th,td { border:1px solid #ccc; padding:8px; text-align:left; }
-th { background:#eaeaea; }
+body{font-family:Arial;background:#f4f6f9;margin:0;}
+header{background:#2c3e50;color:white;padding:15px;}
+nav{background:#34495e;padding:10px;}
+nav a{color:white;margin-right:15px;text-decoration:none;font-weight:bold;}
+.container{padding:25px;}
+table{width:100%;border-collapse:collapse;margin-top:15px;background:white;}
+th,td{padding:10px;border:1px solid #ddd;text-align:left;}
+th{background:#ecf0f1;}
+.total-row{font-weight:bold;background:#ecf0f1;}
 </style>
 </head>
-<body>
 
+<body>
 <header>
-<h1>Residual Portal</h1>
-<nav>
-    <a href="dashboard.html">Dashboard</a>
-    <a href="residuals.html">Residuals</a>
-    <a href="sales-reps.html">Sales Reps</a>
-    <a href="users.html">Users</a>
-    <a href="merchant-search.html">Merchant Search</a>
-    <a href="change-password.html">Change Password</a>
-    <a href="index.html">Logout</a>
-</nav>
+<h2>Residual Portal</h2>
 </header>
 
-<main>
-<h2>My Residuals</h2>
-<canvas id="residualChart" style="max-width:100%;height:250px;"></canvas>
+<nav>
+<a href="dashboard.html">Dashboard</a>
+<a href="residuals.html">Import Residuals</a>
+<a href="my-residuals.html">My Residuals</a>
+<a href="merchant-search.html">Merchant Search</a>
+<a href="users.html">Users</a>
+<a href="index.html">Logout</a>
+</nav>
+
+<div class="container">
+
+<h3>My Residuals</h3>
+
 <table id="residualTable">
 <thead>
 <tr>
-    <th>Month/Year</th>
-    <th>Merchant #</th>
-    <th>DBA</th>
-    <th>Sales Rep ID</th>
-    <th>Residual Total</th>
-    <th>Bucket</th>
+<th>Month/Year</th>
+<th>Merchant ID</th>
+<th>DBA</th>
+<th>Sales Rep ID</th>
+<th>Bucket</th>
+<th>Residual Total</th>
 </tr>
 </thead>
 <tbody></tbody>
 <tfoot>
-<tr>
-    <td colspan="4"><strong>Total:</strong></td>
-    <td id="grandTotal"></td>
-    <td></td>
+<tr class="total-row">
+<td colspan="5">Total</td>
+<td id="totalResidual">$0</td>
+</tr>
+<tr class="total-row">
+<td colspan="5">Average Monthly</td>
+<td id="avgResidual">$0</td>
 </tr>
 </tfoot>
 </table>
-</main>
+
+</div>
 
 <script>
-// === Set current user role ===
-const currentUser = {
-    role: 'admin', // 'admin' or 'salesrep'
-    repId: ''      // fill in if sales rep
-};
+function loadResiduals(){
+    let tbody = document.querySelector("#residualTable tbody")
+    tbody.innerHTML=""
+    let batches = JSON.parse(localStorage.getItem("residualBatches")) || []
+    let allResiduals = []
 
-// Load batches from localStorage
-const residualBatches = JSON.parse(localStorage.getItem("residualBatches")) || [];
-let allMerchants = [];
+    batches.forEach(batch=>{
+        batch.merchants.forEach(m=>{
+            // If you want to restrict by sales rep login, add logic here
+            allResiduals.push({
+                monthYear: m.monthYear,
+                merchant: m.merchant,
+                dba: m.dba,
+                repId: m.repId,
+                bucket: batch.bucket,
+                total: m.total
+            })
+        })
+    })
 
-// Flatten all merchants from all batches
-residualBatches.forEach(batch => {
-    batch.merchants.forEach(m => {
-        allMerchants.push({
-            monthYear: m.monthYear,
-            merchant: m.merchant,
-            dba: m.dba,
-            repId: m.repId,
-            total: parseFloat(m.total || 0),
-            bucket: batch.bucket
-        });
-    });
-});
+    // Sort most recent first
+    allResiduals.sort((a,b)=>{
+        let [aMonth,aYear] = a.monthYear.split("/")
+        let [bMonth,bYear] = b.monthYear.split("/")
+        return new Date(bYear,aMonth-1) - new Date(aYear,bMonth-1)
+    })
 
-// Filter by role
-const visibleMerchants = currentUser.role==='admin' ? allMerchants : allMerchants.filter(m=>m.repId===currentUser.repId);
+    let totalResidual = 0
+    allResiduals.forEach(r=>{
+        let row = document.createElement("tr")
+        row.innerHTML = `<td>${r.monthYear}</td>
+                         <td>${r.merchant}</td>
+                         <td>${r.dba}</td>
+                         <td>${r.repId}</td>
+                         <td>${r.bucket}</td>
+                         <td>$${r.total.toFixed(2)}</td>`
+        tbody.appendChild(row)
+        totalResidual += r.total
+    })
 
-// Aggregate totals per month for chart
-const totalsByMonth = {};
-visibleMerchants.forEach(m=>{
-    totalsByMonth[m.monthYear] = (totalsByMonth[m.monthYear] || 0) + m.total;
-});
+    let avgResidual = allResiduals.length ? totalResidual / allResiduals.length : 0
+    document.getElementById("totalResidual").innerText = "$" + totalResidual.toFixed(2)
+    document.getElementById("avgResidual").innerText = "$" + avgResidual.toFixed(2)
+}
 
-// Chart
-const ctx = document.getElementById('residualChart').getContext('2d');
-const sortedMonths = Object.keys(totalsByMonth).sort((a,b)=>new Date(b)-new Date(a));
-const chartData = sortedMonths.map(m=>totalsByMonth[m]);
-new Chart(ctx,{
-    type:'bar',
-    data:{ labels:sortedMonths, datasets:[{label:'Residual Income', data:chartData, backgroundColor:'rgba(0,115,170,0.7)', borderColor:'rgba(0,115,170,1)', borderWidth:1}]},
-    options:{ responsive:true, scales:{ y:{ beginAtZero:true, ticks:{ stepSize:100000, callback: v=>"$"+Number(v).toLocaleString() }}} }
-});
-
-// Populate table
-const tbody = document.querySelector("#residualTable tbody");
-let grandTotal=0;
-visibleMerchants.forEach(m=>{
-    const tr=document.createElement("tr");
-    tr.innerHTML=`
-        <td>${m.monthYear}</td>
-        <td>${m.merchant}</td>
-        <td>${m.dba}</td>
-        <td>${m.repId}</td>
-        <td>$${m.total.toLocaleString()}</td>
-        <td>${m.bucket}</td>
-    `;
-    grandTotal += m.total;
-    tbody.appendChild(tr);
-});
-document.getElementById("grandTotal").innerText="$"+grandTotal.toLocaleString();
+loadResiduals()
 </script>
 
 </body>
