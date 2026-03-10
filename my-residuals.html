@@ -39,49 +39,61 @@ th{background:#0073aa;color:white;}
 <tr>
 <th>Month/Year</th>
 <th>Residual Name</th>
+<th>Rep</th>
 <th>Amount</th>
 </tr>
 </thead>
 <tbody id="residualBody">
-<tr><td colspan="3" style="text-align:center;">No residuals added yet.</td></tr>
+<tr><td colspan="4" style="text-align:center;">No residuals available.</td></tr>
 </tbody>
 <tfoot>
 <tr class="total-row">
-<td colspan="2">Total</td>
+<td colspan="3">Total</td>
 <td id="residualTotal">$0</td>
 </tr>
 </tfoot>
 </table>
 
 <script>
-// Sample residuals data (replace with your backend data)
+// Example: current logged-in user
+let currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}");
+
+// Example residuals data
 let residuals = JSON.parse(localStorage.getItem("residuals") || "[]");
 
-// Example data for testing:
-// let residuals = [
-//   {month:"2026-03", name:"March Residual", amount:200},
-//   {month:"2026-02", name:"February Residual", amount:150},
-//   {month:"2026-01", name:"January Residual", amount:180}
-// ];
+// Filter residuals based on user role
+function getVisibleResiduals(){
+    if(currentUser.role === "admin"){
+        return residuals; // show all
+    } else if(currentUser.role === "salesrep"){
+        return residuals.filter(r=>r.rep === currentUser.rep);
+    } else {
+        return [];
+    }
+}
 
-// Sort residuals from most recent to oldest
-residuals.sort((a,b)=>b.month.localeCompare(a.month));
+// Sort residuals by month descending
+function sortResiduals(residualsArr){
+    return residualsArr.sort((a,b)=>b.month.localeCompare(a.month));
+}
 
 // Render table
 function renderResiduals(){
     const tbody = document.getElementById("residualBody");
     const totalCell = document.getElementById("residualTotal");
+    const visibleResiduals = sortResiduals(getVisibleResiduals());
     tbody.innerHTML="";
-    if(residuals.length===0){
-        tbody.innerHTML='<tr><td colspan="3" style="text-align:center;">No residuals added yet.</td></tr>';
+    if(visibleResiduals.length===0){
+        tbody.innerHTML='<tr><td colspan="4" style="text-align:center;">No residuals available.</td></tr>';
         totalCell.textContent="$0";
         return;
     }
     let total = 0;
-    residuals.forEach(r=>{
+    visibleResiduals.forEach(r=>{
         tbody.innerHTML += `<tr>
             <td>${r.month}</td>
             <td>${r.name}</td>
+            <td>${r.rep}</td>
             <td>$${r.amount}</td>
         </tr>`;
         total += parseFloat(r.amount);
@@ -89,11 +101,12 @@ function renderResiduals(){
     totalCell.textContent="$" + total.toFixed(2);
 }
 
-// Render graph
+// Render chart
 function renderChart(){
     const ctx = document.getElementById('residualChart').getContext('2d');
-    const labels = residuals.map(r=>r.month).reverse(); // oldest to newest
-    const data = residuals.map(r=>r.amount).reverse();
+    const visibleResiduals = sortResiduals(getVisibleResiduals());
+    const labels = visibleResiduals.map(r=>r.month).reverse(); // oldest to newest
+    const data = visibleResiduals.map(r=>r.amount).reverse();
     new Chart(ctx, {
         type: 'bar',
         data: {
@@ -106,12 +119,7 @@ function renderChart(){
                 borderWidth: 1
             }]
         },
-        options: {
-            responsive:true,
-            scales: {
-                y: { beginAtZero: true }
-            }
-        }
+        options: {responsive:true, scales: {y: {beginAtZero: true}}}
     });
 }
 
