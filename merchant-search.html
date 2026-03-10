@@ -6,64 +6,57 @@
 <title>Merchant Search</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-body { 
-    font-family: Arial; 
-    background: #f4f6f9; 
-    padding: 20px; 
-    max-width: 1200px; 
-    margin: 0 auto; 
+body {
+    font-family: Arial;
+    background: #f4f6f9;
+    padding: 20px;
 }
-.nav a { 
-    margin-right: 10px; 
-    padding: 6px 12px; 
-    background: #0073aa; 
-    color: white; 
-    border-radius: 5px; 
-    text-decoration: none; 
-    font-size: 14px; 
+.nav a {
+    margin-right: 10px;
+    padding: 6px 12px;
+    background: #0073aa;
+    color: white;
+    border-radius: 5px;
+    text-decoration: none;
+    font-size: 14px;
 }
-.nav a.logout { 
-    background: #d00; 
-}
-.nav a:hover { 
-    background: #005fd1; 
-}
+.nav a.logout { background: #d00; }
+.nav a:hover { background: #005fd1; }
 h2 { margin-top: 20px; }
-input[type=text] { 
-    padding: 6px; 
-    width: 220px; 
-    margin-right: 5px; 
-    border-radius: 4px; 
-    border: 1px solid #ccc; 
+input[type=text] {
+    padding: 6px;
+    width: 220px;
+    margin-right: 5px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
 }
-button { 
-    padding: 6px 12px; 
-    border-radius: 4px; 
-    border: none; 
-    background: #0073aa; 
-    color: white; 
-    cursor: pointer; 
-    margin-top: 5px; 
+button {
+    padding: 6px 12px;
+    border-radius: 4px;
+    border: none;
+    background: #0073aa;
+    color: white;
+    cursor: pointer;
+    margin-top: 5px;
 }
 button:hover { background: #005fd1; }
-table { 
-    width: 100%; 
-    border-collapse: collapse; 
-    margin-top: 10px; 
-    background: white; 
-    font-size: 14px; 
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    background: white;
+    font-size: 14px;
 }
-th, td { 
-    border: 1px solid #ddd; 
-    padding: 6px; 
-    text-align: left; 
+th, td {
+    border: 1px solid #ddd;
+    padding: 6px;
+    text-align: left;
 }
 th { background: #0073aa; color: white; }
 .total-row { font-weight: bold; background: #eee; }
-.graph-container { 
-    width: 600px; 
-    max-width: 90%; 
-    margin: 10px auto; 
+.graph-container {
+    width: 100%;
+    margin: 10px 0;
 }
 </style>
 </head>
@@ -82,13 +75,13 @@ th { background: #0073aa; color: white; }
 
 <h2>Merchant Search</h2>
 
-<div style="margin-bottom:5px;">
+<div>
   <input type="text" id="merchantInput" placeholder="Enter Merchant ID or DBA">
   <button onclick="searchMerchant()">Search</button>
 </div>
 
 <div class="graph-container">
-  <canvas id="merchantChart" width="600" height="250"></canvas>
+  <canvas id="merchantChart"></canvas>
 </div>
 
 <table id="merchantTable">
