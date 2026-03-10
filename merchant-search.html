@@ -3,9 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Import Residuals</title>
-
-<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<title>Merchant Search</title>
 
 <style>
 body{font-family:Arial;background:#f4f6f9;margin:0;}
@@ -15,14 +13,14 @@ nav a{color:white;margin-right:15px;text-decoration:none;font-weight:bold;}
 .container{padding:25px;}
 button{background:#3498db;border:none;color:white;padding:10px 18px;cursor:pointer;border-radius:4px;}
 button:hover{background:#2980b9;}
-table{width:100%;border-collapse:collapse;margin-top:25px;background:white;}
+table{width:100%;border-collapse:collapse;margin-top:15px;background:white;}
 th,td{padding:10px;border:1px solid #ddd;text-align:left;}
 th{background:#ecf0f1;}
+.total-row{font-weight:bold;background:#ecf0f1;}
 </style>
 </head>
 
 <body>
-
 <header>
 <h2>Residual Portal</h2>
 </header>
@@ -38,132 +36,85 @@ th{background:#ecf0f1;}
 
 <div class="container">
 
-<h3>Import Residual File</h3>
-<br>
-<label>Residual Month/Year:</label>
-<input type="month" id="residualMonth">
-<br><br>
-<label>Bucket:</label>
-<select id="bucket">
-<option value="Direct">Direct</option>
-<option value="ISO">ISO</option>
-<option value="Agent">Agent</option>
-</select>
-<br><br>
-<input type="file" id="fileUpload">
-<br><br>
-<button onclick="importFile()">Upload Residual File</button>
+<h3>Merchant Search</h3>
+<label>Enter Merchant ID or DBA:</label>
+<input type="text" id="searchInput">
+<button onclick="searchMerchant()">Search</button>
 
-<h3>Uploaded Files</h3>
-<table id="batchTable">
+<table id="resultTable">
 <thead>
 <tr>
-<th>Select</th>
-<th>Month</th>
+<th>Month/Year</th>
+<th>Merchant ID</th>
+<th>DBA</th>
+<th>Sales Rep ID</th>
 <th>Bucket</th>
-<th>Merchants</th>
+<th>Residual Total</th>
 </tr>
 </thead>
 <tbody></tbody>
+<tfoot>
+<tr class="total-row">
+<td colspan="5">Total</td>
+<td id="totalResidual">$0</td>
+</tr>
+<tr class="total-row">
+<td colspan="5">Average Monthly</td>
+<td id="avgResidual">$0</td>
+</tr>
+</tfoot>
 </table>
-<br>
-<button onclick="deleteSelected()">Delete Selected</button>
 
 </div>
 
 <script>
-function excelDateToMMYYYY(serial){
-    let date = new Date((serial - 25569) * 86400 * 1000)
-    return (date.getMonth()+1) + "/" + date.getFullYear()
-}
-
-function loadBatches(){
-    let batches = JSON.parse(localStorage.getItem("residualBatches")) || []
-    let tbody = document.querySelector("#batchTable tbody")
+function searchMerchant(){
+    let query = document.getElementById("searchInput").value.trim().toLowerCase()
+    let tbody = document.querySelector("#resultTable tbody")
     tbody.innerHTML=""
-    batches.forEach((batch,i)=>{
-        let row = document.createElement("tr")
-        row.innerHTML = `<td><input type="checkbox" data-index="${i}"></td>
-                        <td>${batch.month}</td>
-                        <td>${batch.bucket}</td>
-                        <td>${batch.merchants.length}</td>`
-        tbody.appendChild(row)
-    })
-}
 
-function importFile(){
-    let file = document.getElementById("fileUpload").files[0]
-    let month = document.getElementById("residualMonth").value
-    let bucket = document.getElementById("bucket").value
-    if(!file){ alert("Please upload a file"); return }
-
-    let reader = new FileReader()
-    reader.onload = function(e){
-        let data = new Uint8Array(e.target.result)
-        let workbook = XLSX.read(data,{type:"array"})
-        let sheet = workbook.Sheets[workbook.SheetNames[0]]
-
-        let range = XLSX.utils.decode_range(sheet['!ref'])
-        let merchants = []
-
-        for(let R=2; R<=range.e.r; ++R){ // row 3
-            let monthCell = sheet['A'+(R+1)]
-            let merchantCell = sheet['B'+(R+1)]
-            let dbaCell = sheet['C'+(R+1)]
-            let repCell = sheet['M'+(R+1)]
-            let totalCell = sheet['MP'+(R+1)] // <- MP column
-
-            if(!merchantCell) continue
-
-            // Convert Excel serial date
-            let monthYear = ""
-            if(monthCell && monthCell.v){
-                if(typeof monthCell.v === "number"){
-                    monthYear = excelDateToMMYYYY(monthCell.v)
-                } else { monthYear = monthCell.v }
-            }
-
-            let merchant = merchantCell.v || ""
-            let dba = dbaCell ? dbaCell.v : ""
-            let repId = repCell ? repCell.v : ""
-            let residual = totalCell && !isNaN(totalCell.v) ? parseFloat(totalCell.v) : 0
-
-            merchants.push({
-                monthYear:monthYear,
-                merchant:merchant,
-                dba:dba,
-                repId:repId,
-                total:residual
-            })
-        }
-
-        let batches = JSON.parse(localStorage.getItem("residualBatches")) || []
-        batches.push({
-            batchId:Date.now(),
-            month:month,
-            bucket:bucket,
-            merchants:merchants
-        })
-
-        localStorage.setItem("residualBatches",JSON.stringify(batches))
-        loadBatches()
-        alert("Residual file imported successfully")
-    }
-    reader.readAsArrayBuffer(file)
-}
-
-function deleteSelected(){
     let batches = JSON.parse(localStorage.getItem("residualBatches")) || []
-    let checks = document.querySelectorAll("input[type=checkbox]:checked")
-    let indexes = []
-    checks.forEach(c=>{ indexes.push(parseInt(c.dataset.index)) })
-    indexes.sort((a,b)=>b-a)
-    indexes.forEach(i=>{ batches.splice(i,1) })
-    localStorage.setItem("residualBatches",JSON.stringify(batches))
-    loadBatches()
-}
+    let results = []
 
-loadBatches()
+    batches.forEach(batch=>{
+        batch.merchants.forEach(m=>{
+            if(m.merchant.toLowerCase().includes(query) || m.dba.toLowerCase().includes(query)){
+                results.push({
+                    monthYear: m.monthYear,
+                    merchant: m.merchant,
+                    dba: m.dba,
+                    repId: m.repId,
+                    bucket: batch.bucket,
+                    total: m.total
+                })
+            }
+        })
+    })
+
+    // Sort most recent first
+    results.sort((a,b)=>{
+        let [aMonth,aYear] = a.monthYear.split("/")
+        let [bMonth,bYear] = b.monthYear.split("/")
+        return new Date(bYear,aMonth-1) - new Date(aYear,bMonth-1)
+    })
+
+    let totalResidual = 0
+    results.forEach(r=>{
+        let row = document.createElement("tr")
+        row.innerHTML = `<td>${r.monthYear}</td>
+                         <td>${r.merchant}</td>
+                         <td>${r.dba}</td>
+                         <td>${r.repId}</td>
+                         <td>${r.bucket}</td>
+                         <td>$${r.total.toFixed(2)}</td>`
+        tbody.appendChild(row)
+        totalResidual += r.total
+    })
+
+    let avgResidual = results.length ? totalResidual / results.length : 0
+    document.getElementById("totalResidual").innerText = "$" + totalResidual.toFixed(2)
+    document.getElementById("avgResidual").innerText = "$" + avgResidual.toFixed(2)
+}
 </script>
 
 </body>
