@@ -5,23 +5,40 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Users Management</title>
 <style>
-body { font-family: Arial, sans-serif; background: #f4f6f9; padding: 20px; font-size: 18px; }
-h2 { margin-bottom: 20px; }
-input, select { padding: 8px; font-size: 16px; margin-right: 10px; margin-bottom: 10px; }
-button { padding: 8px 12px; font-size: 16px; border: none; border-radius: 4px; background: #0073aa; color: white; cursor: pointer; }
-button:hover { background: #005fd1; }
-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-th { background: #eaeaea; }
-.editable { background: #fff3cd; }
+body { font-family: Arial, sans-serif; font-size: 18px; background: #f4f6f9; margin:0; padding:0; }
+header { background: #0073aa; color: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; }
+header h1 { margin: 0; font-size: 20px; }
+nav a { color: white; text-decoration: none; margin-left: 15px; font-weight: bold; }
+nav a:hover { text-decoration: underline; }
+main { padding: 20px; }
+input, select { padding: 8px; font-size: 16px; margin-bottom: 10px; display:block; width:300px; }
+button { padding:8px 12px; font-size:16px; border:none; border-radius:4px; background:#0073aa; color:white; cursor:pointer; }
+button:hover{background:#005fd1;}
+table { width:100%; border-collapse: collapse; margin-top:20px; }
+th, td { border:1px solid #ccc; padding:8px; text-align:left; }
+th { background:#eaeaea; }
+.editable { background:#fff3cd; }
 </style>
 </head>
 <body>
 
+<header>
+<h1>Residual Portal</h1>
+<nav>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="residuals.html">Residuals</a>
+    <a href="sales-reps.html">Sales Reps</a>
+    <a href="users.html">Users</a>
+    <a href="merchant-search.html">Merchant Search</a>
+    <a href="change-password.html">Change Password</a>
+    <a href="index.html">Logout</a>
+</nav>
+</header>
+
+<main>
 <h2>Users Management</h2>
 <p>Create portal users with limited view permissions here.</p>
 
-<!-- User input form -->
 <div>
     <input type="text" id="newEmail" placeholder="Email / Username">
     <input type="text" id="newAssignedRep" placeholder="Assigned Rep">
@@ -33,71 +50,64 @@ th { background: #eaeaea; }
     <button onclick="addUser()">Add User</button>
 </div>
 
-<!-- Users table -->
 <table id="usersTable">
-    <thead>
-        <tr>
-            <th>Email / Username</th>
-            <th>Permission Level</th>
-            <th>Assigned Rep</th>
-            <th>Password</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        <!-- Users will be dynamically added here -->
-    </tbody>
+<thead>
+<tr>
+    <th>Email / Username</th>
+    <th>Permission Level</th>
+    <th>Assigned Rep</th>
+    <th>Password</th>
+    <th>Actions</th>
+</tr>
+</thead>
+<tbody></tbody>
 </table>
+</main>
 
 <script>
-// Load users from localStorage or start with empty
-let users = JSON.parse(localStorage.getItem("users")) || [];
+// Load users from localStorage or start with admin
+let users = JSON.parse(localStorage.getItem("users")) || [
+    {email:"admin@email.com", password:"portal123", permission:"admin", assignedRep:null}
+];
 
-// Sample sales reps for autocomplete (replace with your actual reps)
-let salesReps = ["John Doe", "Jane Smith", "Alice Johnson", "Bob Lee"];
-
-// Function to display users in table
+// Render table
 function renderUsers() {
     const tbody = document.querySelector("#usersTable tbody");
     tbody.innerHTML = "";
-    users.forEach((user, index) => {
-        const tr = document.createElement("tr");
+    users.forEach((user,index)=>{
+        const tr=document.createElement("tr");
 
-        // Email
-        const tdEmail = document.createElement("td");
-        tdEmail.textContent = user.email;
-        tdEmail.contentEditable = false;
+        const tdEmail=document.createElement("td");
+        tdEmail.textContent=user.email;
+        tdEmail.contentEditable=false;
         tr.appendChild(tdEmail);
 
-        // Permission
-        const tdPermission = document.createElement("td");
-        tdPermission.textContent = user.permission;
-        tdPermission.contentEditable = false;
+        const tdPermission=document.createElement("td");
+        tdPermission.textContent=user.permission;
+        tdPermission.contentEditable=false;
         tr.appendChild(tdPermission);
 
-        // Assigned Rep
-        const tdRep = document.createElement("td");
-        tdRep.textContent = user.assignedRep || "";
-        tdRep.contentEditable = false;
+        const tdRep=document.createElement("td");
+        tdRep.textContent=user.assignedRep || "";
+        tdRep.contentEditable=false;
         tr.appendChild(tdRep);
 
-        // Password
-        const tdPassword = document.createElement("td");
-        tdPassword.textContent = user.password || "";
-        tdPassword.contentEditable = false;
+        const tdPassword=document.createElement("td");
+        tdPassword.textContent=user.password || "";
+        tdPassword.contentEditable=false;
         tr.appendChild(tdPassword);
 
-        // Actions
-        const tdActions = document.createElement("td");
-        const editBtn = document.createElement("button");
-        editBtn.textContent = "Edit";
-        editBtn.onclick = () => toggleEdit(tr, index);
+        const tdActions=document.createElement("td");
+
+        const editBtn=document.createElement("button");
+        editBtn.textContent="Edit";
+        editBtn.onclick=()=>toggleEdit(tr,index);
         tdActions.appendChild(editBtn);
 
-        const deleteBtn = document.createElement("button");
-        deleteBtn.style.marginLeft = "5px";
-        deleteBtn.textContent = "Delete";
-        deleteBtn.onclick = () => deleteUser(index);
+        const deleteBtn=document.createElement("button");
+        deleteBtn.style.marginLeft="5px";
+        deleteBtn.textContent="Delete";
+        deleteBtn.onclick=()=>deleteUser(index);
         tdActions.appendChild(deleteBtn);
 
         tr.appendChild(tdActions);
@@ -105,83 +115,74 @@ function renderUsers() {
     });
 }
 
-// Add new user
-function addUser() {
-    const email = document.getElementById("newEmail").value.trim();
-    const assignedRep = document.getElementById("newAssignedRep").value.trim();
-    const permission = document.getElementById("newPermission").value;
-    const password = document.getElementById("newPassword").value || generateTempPassword();
+// Add user
+function addUser(){
+    const email=document.getElementById("newEmail").value.trim();
+    const assignedRep=document.getElementById("newAssignedRep").value.trim();
+    const permission=document.getElementById("newPermission").value;
+    const password=document.getElementById("newPassword").value || generateTempPassword();
 
-    if(!email) { alert("Email is required."); return; }
+    if(!email){alert("Email is required."); return;}
 
-    // If permission is admin, assignedRep should be empty
-    const rep = permission === "admin" ? null : assignedRep;
+    const rep=permission==="admin"?null:assignedRep;
 
-    users.push({email, permission, assignedRep: rep, password});
+    users.push({email,permission,assignedRep:rep,password});
     saveUsers();
     clearInputs();
     renderUsers();
 }
 
 // Delete user
-function deleteUser(index) {
-    if(confirm("Are you sure you want to delete this user?")) {
-        users.splice(index, 1);
+function deleteUser(index){
+    if(confirm("Are you sure you want to delete this user?")){
+        users.splice(index,1);
         saveUsers();
         renderUsers();
     }
 }
 
-// Toggle edit mode for a row
-function toggleEdit(tr, index) {
-    const editable = tr.querySelectorAll("td");
-    const isEditing = tr.classList.contains("editable");
+// Toggle edit
+function toggleEdit(tr,index){
+    const editable=tr.querySelectorAll("td");
+    const isEditing=tr.classList.contains("editable");
 
     if(!isEditing){
         tr.classList.add("editable");
-        editable[0].contentEditable = true; // email
-        editable[1].contentEditable = true; // permission
-        editable[2].contentEditable = true; // assigned rep
-        editable[3].contentEditable = true; // password
+        editable[0].contentEditable=true;
+        editable[1].contentEditable=true;
+        editable[2].contentEditable=true;
+        editable[3].contentEditable=true;
         editable[0].focus();
     } else {
         tr.classList.remove("editable");
-        editable[0].contentEditable = false;
-        editable[1].contentEditable = false;
-        editable[2].contentEditable = false;
-        editable[3].contentEditable = false;
+        editable[0].contentEditable=false;
+        editable[1].contentEditable=false;
+        editable[2].contentEditable=false;
+        editable[3].contentEditable=false;
 
-        // Save changes
-        users[index].email = editable[0].textContent.trim();
-        users[index].permission = editable[1].textContent.trim();
-        users[index].assignedRep = editable[2].textContent.trim();
-        users[index].password = editable[3].textContent.trim();
+        users[index].email=editable[0].textContent.trim();
+        users[index].permission=editable[1].textContent.trim();
+        users[index].assignedRep=editable[2].textContent.trim();
+        users[index].password=editable[3].textContent.trim();
 
-        // Clear assignedRep if admin
-        if(users[index].permission === "admin") users[index].assignedRep = null;
+        if(users[index].permission==="admin") users[index].assignedRep=null;
 
         saveUsers();
         renderUsers();
     }
 }
 
-// Save users to localStorage
-function saveUsers() {
-    localStorage.setItem("users", JSON.stringify(users));
+// Save to localStorage
+function saveUsers(){localStorage.setItem("users",JSON.stringify(users));}
+function clearInputs(){
+    document.getElementById("newEmail").value="";
+    document.getElementById("newAssignedRep").value="";
+    document.getElementById("newPermission").value="admin";
+    document.getElementById("newPassword").value="";
 }
 
-// Clear input fields
-function clearInputs() {
-    document.getElementById("newEmail").value = "";
-    document.getElementById("newAssignedRep").value = "";
-    document.getElementById("newPermission").value = "admin";
-    document.getElementById("newPassword").value = "";
-}
-
-// Generate temporary password
-function generateTempPassword() {
-    return Math.random().toString(36).slice(-8);
-}
+// Temporary password generator
+function generateTempPassword(){return Math.random().toString(36).slice(-8);}
 
 // Initial render
 renderUsers();
