@@ -11,7 +11,7 @@
 
 body{
 font-family:Arial;
-background:#f5f5f5;
+background:#f4f6f9;
 margin:0;
 }
 
@@ -99,11 +99,9 @@ background:#ecf0f1;
 <label>Bucket:</label>
 
 <select id="bucket">
-
 <option value="Direct">Direct</option>
 <option value="ISO">ISO</option>
 <option value="Agent">Agent</option>
-
 </select>
 
 <br><br>
@@ -141,6 +139,19 @@ background:#ecf0f1;
 
 <script>
 
+function excelDateToJS(serial){
+
+let utc_days = Math.floor(serial - 25569)
+let utc_value = utc_days * 86400
+let date_info = new Date(utc_value * 1000)
+
+let month = date_info.getMonth() + 1
+let year = date_info.getFullYear()
+
+return month + "/" + year
+
+}
+
 function loadBatches(){
 
 let batches = JSON.parse(localStorage.getItem("residualBatches")) || []
@@ -169,9 +180,7 @@ tbody.appendChild(row)
 function importFile(){
 
 let file = document.getElementById("fileUpload").files[0]
-
 let month = document.getElementById("residualMonth").value
-
 let bucket = document.getElementById("bucket").value
 
 if(!file){
@@ -199,11 +208,20 @@ let row = rows[i]
 
 if(!row) continue
 
-let monthYear = row[0] || ""
+let rawDate = row[0]
+let monthYear = ""
+
+if(typeof rawDate === "number"){
+monthYear = excelDateToJS(rawDate)
+}else{
+monthYear = rawDate
+}
+
 let merchant = row[1] || ""
 let dba = row[2] || ""
 let repId = row[12] || ""
-let residual = row[407] || 0
+
+let residual = parseFloat(row[407]) || 0
 
 if(merchant){
 
@@ -213,7 +231,7 @@ monthYear:monthYear,
 merchant:merchant,
 dba:dba,
 repId:repId,
-total:parseFloat(residual)
+total:residual
 
 })
 
@@ -253,17 +271,13 @@ let checks = document.querySelectorAll("input[type=checkbox]:checked")
 let indexes = []
 
 checks.forEach(c=>{
-
 indexes.push(parseInt(c.dataset.index))
-
 })
 
 indexes.sort((a,b)=>b-a)
 
 indexes.forEach(i=>{
-
 batches.splice(i,1)
-
 })
 
 localStorage.setItem("residualBatches",JSON.stringify(batches))
