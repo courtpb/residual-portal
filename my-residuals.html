@@ -59,15 +59,17 @@ th { background:#eaeaea; }
 </main>
 
 <script>
-// === Adjust this for your login system ===
+// === Set current user role ===
 const currentUser = {
-    role: 'salesrep', // 'admin' or 'salesrep'
-    repId: 'REP1'     // sales rep ID for filtering
+    role: 'admin', // 'admin' or 'salesrep'
+    repId: ''      // fill in if sales rep
 };
 
-// Load all residuals
+// Load batches from localStorage
 const residualBatches = JSON.parse(localStorage.getItem("residualBatches")) || [];
 let allMerchants = [];
+
+// Flatten all merchants from all batches
 residualBatches.forEach(batch => {
     batch.merchants.forEach(m => {
         allMerchants.push({
@@ -75,43 +77,29 @@ residualBatches.forEach(batch => {
             merchant: m.merchant,
             dba: m.dba,
             repId: m.repId,
-            total: m.total,
+            total: parseFloat(m.total || 0),
             bucket: batch.bucket
         });
     });
 });
 
-// Filter for current user
-let visibleMerchants = currentUser.role === 'admin' ? allMerchants : allMerchants.filter(m => m.repId === currentUser.repId);
+// Filter by role
+const visibleMerchants = currentUser.role==='admin' ? allMerchants : allMerchants.filter(m=>m.repId===currentUser.repId);
 
 // Aggregate totals per month for chart
 const totalsByMonth = {};
-visibleMerchants.forEach(m => {
-    totalsByMonth[m.monthYear] = (totalsByMonth[m.monthYear] || 0) + parseFloat(m.total || 0);
+visibleMerchants.forEach(m=>{
+    totalsByMonth[m.monthYear] = (totalsByMonth[m.monthYear] || 0) + m.total;
 });
 
-// Prepare chart
+// Chart
 const ctx = document.getElementById('residualChart').getContext('2d');
-const sortedMonths = Object.keys(totalsByMonth).sort((a,b)=> new Date(b) - new Date(a)); // newest to oldest
+const sortedMonths = Object.keys(totalsByMonth).sort((a,b)=>new Date(b)-new Date(a));
 const chartData = sortedMonths.map(m=>totalsByMonth[m]);
-new Chart(ctx, {
+new Chart(ctx,{
     type:'bar',
-    data:{
-        labels:sortedMonths,
-        datasets:[{
-            label:'Residual Income',
-            data:chartData,
-            backgroundColor:'rgba(0,115,170,0.7)',
-            borderColor:'rgba(0,115,170,1)',
-            borderWidth:1
-        }]
-    },
-    options:{
-        responsive:true,
-        scales:{
-            y:{ beginAtZero:true, ticks:{ stepSize:100000, callback: v=>"$"+Number(v).toLocaleString() } }
-        }
-    }
+    data:{ labels:sortedMonths, datasets:[{label:'Residual Income', data:chartData, backgroundColor:'rgba(0,115,170,0.7)', borderColor:'rgba(0,115,170,1)', borderWidth:1}]},
+    options:{ responsive:true, scales:{ y:{ beginAtZero:true, ticks:{ stepSize:100000, callback: v=>"$"+Number(v).toLocaleString() }}} }
 });
 
 // Populate table
@@ -124,10 +112,10 @@ visibleMerchants.forEach(m=>{
         <td>${m.merchant}</td>
         <td>${m.dba}</td>
         <td>${m.repId}</td>
-        <td>$${Number(m.total).toLocaleString()}</td>
+        <td>$${m.total.toLocaleString()}</td>
         <td>${m.bucket}</td>
     `;
-    grandTotal += parseFloat(m.total || 0);
+    grandTotal += m.total;
     tbody.appendChild(tr);
 });
 document.getElementById("grandTotal").innerText="$"+grandTotal.toLocaleString();
