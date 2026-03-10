@@ -1,84 +1,140 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>Residuals</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Import Residuals</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 <style>
-body{font-family:Arial;background:#f4f6f9;padding:40px;}
-.nav a{margin-right:10px;padding:8px 15px;background:#0073aa;color:white;border-radius:5px;text-decoration:none;}
-.nav a.logout{background:#d00;}
-.nav a:hover{background:#005fd1;}
-input,button{padding:5px;margin:5px 0;}
-table{width:100%;border-collapse:collapse;margin-top:20px;background:white;}
-th,td{border:1px solid #ddd;padding:8px;text-align:left;}
-th{background:#0073aa;color:white;}
+body { font-family: Arial, sans-serif; font-size: 16px; background: #f4f6f9; margin:0; padding:0; }
+header { background: #0073aa; color: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; }
+header h1 { margin:0; font-size:20px; }
+nav a { color:white; text-decoration:none; margin-right:15px; font-weight:bold; font-size:16px; padding: 8px 12px; border-radius:4px; background:#005f99; }
+nav a:hover { background:#004066; }
+main { padding:20px; max-width:1200px; margin:0 auto; }
+form { margin-bottom:20px; display:flex; flex-wrap:wrap; gap:10px; align-items:flex-start; }
+input, select { padding:8px; font-size:16px; width:250px; }
+button { padding:8px 12px; font-size:16px; border:none; border-radius:4px; background:#0073aa; color:white; cursor:pointer; }
+button:hover { background:#005fd1; }
+table { width:100%; border-collapse: collapse; margin-top:20px; }
+th, td { border:1px solid #ccc; padding:8px; text-align:left; }
+th { background:#eaeaea; }
 </style>
 </head>
 <body>
 
-<!-- NAVIGATION -->
-<div class="nav">
-<a href="dashboard.html">Dashboard</a>
-<a href="residuals.html">Residuals</a>
-<a href="sales-reps.html">Sales Reps</a>
-<a href="users.html">Users</a>
-<a href="my-residuals.html">My Residuals</a>
-<a href="merchant-search.html">Merchant Search</a>
-<a href="change-password.html">Change Password</a>
-<a href="index.html" class="logout">Logout</a>
-</div>
+<header>
+<h1>Residual Portal</h1>
+<nav>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="residuals.html">Residuals</a>
+    <a href="sales-reps.html">Sales Reps</a>
+    <a href="users.html">Users</a>
+    <a href="merchant-search.html">Merchant Search</a>
+    <a href="change-password.html">Change Password</a>
+    <a href="index.html">Logout</a>
+</nav>
+</header>
 
-<h2>Residuals Upload</h2>
+<main>
+<h2>Import Residuals</h2>
+<p>Upload a residual file and assign it a bucket and month/year.</p>
 
-Residual Month/Year: <input type="month" id="resMonth"><br>
-Residual Name / Bucket: <input type="text" id="resName"><br>
-Upload File: <input type="file" id="resFile"><br>
-<button onclick="addResidualReport()">Upload</button>
+<form id="uploadForm">
+    <input type="month" id="residualMonth" required>
+    <select id="residualBucket" required>
+        <option value="">Select Bucket</option>
+        <option value="Bucket 1">Bucket 1</option>
+        <option value="Bucket 2">Bucket 2</option>
+    </select>
+    <input type="file" id="residualFile" accept=".xlsx,.xls" required>
+    <button type="submit">Upload Residual</button>
+</form>
 
-<table>
+<table id="residualsTable">
 <thead>
 <tr>
-<th>Report Name</th>
-<th>Month/Year</th>
-<th>File Name</th>
-<th>Actions</th>
+    <th>Month/Year</th>
+    <th>Merchant #</th>
+    <th>DBA</th>
+    <th>Sales Rep ID</th>
+    <th>Residual Total</th>
+    <th>Bucket</th>
+    <th>Actions</th>
 </tr>
 </thead>
-<tbody id="residualBody"></tbody>
+<tbody></tbody>
 </table>
+</main>
 
 <script>
-let residualReports = JSON.parse(localStorage.getItem("residualReports") || "[]");
+// Load residuals from localStorage
+let residuals = JSON.parse(localStorage.getItem("residuals")) || [];
 
+// Render table
 function renderResiduals(){
-    const tbody=document.getElementById("residualBody");
-    tbody.innerHTML="";
-    residualReports.forEach((r,i)=>{
+    const tbody = document.querySelector("#residualsTable tbody");
+    tbody.innerHTML = "";
+    residuals.forEach((res,index)=>{
         const tr=document.createElement("tr");
-        tr.innerHTML=`<td>${r.name}</td>
-                      <td>${r.month}</td>
-                      <td>${r.fileName}</td>
-                      <td><button onclick="deleteResidual(${i})">Delete</button></td>`;
+        tr.innerHTML=`
+            <td>${res.monthYear}</td>
+            <td>${res.merchant}</td>
+            <td>${res.dba}</td>
+            <td>${res.repId}</td>
+            <td>${res.total}</td>
+            <td>${res.bucket}</td>
+            <td><button onclick="deleteResidual(${index})">Delete</button></td>
+        `;
         tbody.appendChild(tr);
     });
 }
 
-function addResidualReport(){
-    const month=document.getElementById("resMonth").value;
-    const name=document.getElementById("resName").value.trim();
-    const file=document.getElementById("resFile").files[0];
-    if(!month || !name || !file){alert("Fill all fields and select a file");return;}
-    residualReports.push({month,name,fileName:file.name});
-    localStorage.setItem("residualReports",JSON.stringify(residualReports));
-    renderResiduals();
-    document.getElementById("resMonth").value="";
-    document.getElementById("resName").value="";
-    document.getElementById("resFile").value="";
+// Delete residual
+function deleteResidual(index){
+    if(confirm("Delete this residual?")){
+        residuals.splice(index,1);
+        localStorage.setItem("residuals",JSON.stringify(residuals));
+        renderResiduals();
+    }
 }
 
-function deleteResidual(i){
-    if(confirm("Delete this report?")){residualReports.splice(i,1);localStorage.setItem("residualReports",JSON.stringify(residualReports));renderResiduals();}
-}
+// Handle upload
+document.getElementById("uploadForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    const file = document.getElementById("residualFile").files[0];
+    const monthYear = document.getElementById("residualMonth").value;
+    const bucket = document.getElementById("residualBucket").value;
+    if(!file) return alert("Select a file.");
 
+    const reader = new FileReader();
+    reader.onload = function(e){
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data,{type:"array"});
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json(firstSheet,{header:1});
+
+        // Loop through rows starting at row 2 (skip headers)
+        for(let i=1;i<jsonData.length;i++){
+            const row=jsonData[i];
+            residuals.push({
+                monthYear: row[0] || monthYear,
+                merchant: row[1] || "",
+                dba: row[2] || "",
+                repId: row[12] || "", // column M = index 12
+                total: row[408] || 0, // column MP = index 408
+                bucket: bucket
+            });
+        }
+        localStorage.setItem("residuals",JSON.stringify(residuals));
+        renderResiduals();
+        document.getElementById("uploadForm").reset();
+    };
+    reader.readAsArrayBuffer(file);
+});
+
+// Initial render
 renderResiduals();
 </script>
 
