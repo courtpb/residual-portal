@@ -104,12 +104,17 @@ function renderResiduals(){
     totalCell.textContent = "$" + Math.round(total).toLocaleString();
 }
 
-// Render chart
+// Render chart with Y-axis increments of 100k
 function renderChart(){
     const ctx = document.getElementById('residualChart').getContext('2d');
     const visibleResiduals = sortResiduals(getVisibleResiduals());
     const labels = visibleResiduals.map(r=>r.month).reverse(); // oldest to newest
     const data = visibleResiduals.map(r=>Math.round(r.amount)).reverse();
+
+    // Calculate Y-axis max (round up to nearest 100k)
+    let maxValue = Math.max(...data, 100000); // ensure at least 100k if no data
+    let yMax = Math.ceil(maxValue / 100000) * 100000;
+
     new Chart(ctx, {
         type: 'bar',
         data: {
@@ -127,9 +132,11 @@ function renderChart(){
             scales: {
                 y: {
                     beginAtZero: true,
+                    min: 0,
+                    max: yMax,
                     ticks: {
                         stepSize: 100000,
-                        callback: function(value){return "$" + value.toLocaleString();}
+                        callback: function(value){ return "$" + value.toLocaleString(); }
                     }
                 }
             }
