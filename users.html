@@ -15,6 +15,7 @@ th{background:#0073aa;color:white;}
 .autocomplete-suggestions{border:1px solid #ddd;background:white;position:absolute;z-index:1000;max-height:120px;overflow-y:auto;}
 .autocomplete-suggestion{padding:5px;cursor:pointer;}
 .autocomplete-suggestion:hover{background:#f0f0f0;}
+.editing{background:#eef;}
 </style>
 </head>
 <body>
@@ -50,26 +51,26 @@ Assigned Rep: <input id="userRep" placeholder="Start typing rep name">
 <table>
 <thead>
 <tr>
-<th>Username / Email</th>
+<th>Email / Username</th>
 <th>Permission Level</th>
 <th>Assigned Rep</th>
+<th>Temporary Password</th>
 <th>Actions</th>
 </tr>
 </thead>
 <tbody id="usersBody">
-<tr><td colspan="4" style="text-align:center;">No users added yet.</td></tr>
+<tr><td colspan="5" style="text-align:center;">No users added yet.</td></tr>
 </tbody>
 </table>
 
 <script>
-// Load users and sales reps from localStorage
+// Load users and sales reps
 let users = JSON.parse(localStorage.getItem("users") || "[]");
 let salesReps = JSON.parse(localStorage.getItem("salesReps") || "[]");
 
-// AUTOCOMPLETE for Assigned Rep
+// AUTOCOMPLETE
 const repInput = document.getElementById("userRep");
 const suggestionsDiv = document.getElementById("repSuggestions");
-
 repInput.addEventListener("input", function(){
     const val = this.value.toLowerCase();
     suggestionsDiv.innerHTML = "";
@@ -85,43 +86,82 @@ repInput.addEventListener("input", function(){
         }
     });
 });
-
-// Close suggestions if clicked outside
 document.addEventListener("click", e=>{if(e.target!==repInput){suggestionsDiv.innerHTML="";}});
 
-// USER TABLE FUNCTIONS
+// RENDER TABLE
 function renderUsers(){
     const tbody = document.getElementById("usersBody");
     tbody.innerHTML = "";
     if(users.length===0){
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No users added yet.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No users added yet.</td></tr>';
         return;
     }
     users.forEach((u,i)=>{
-        tbody.innerHTML += `<tr>
-            <td>${u.email}</td>
-            <td>${u.role}</td>
-            <td>${u.rep}</td>
+        tbody.innerHTML += `<tr data-index="${i}">
+            <td class="editable" data-field="email">${u.email}</td>
+            <td class="editable" data-field="role">${u.role}</td>
+            <td class="editable" data-field="rep">${u.rep}</td>
+            <td class="editable" data-field="password">${u.password}</td>
             <td>
-                <button onclick="editUser(${i})">Edit</button>
                 <button onclick="deleteUser(${i})">Delete</button>
             </td>
         </tr>`;
     });
+    addInlineEditing();
 }
 
+// INLINE EDITING
+function addInlineEditing(){
+    document.querySelectorAll(".editable").forEach(cell=>{
+        cell.addEventListener("click", function(){
+            if(cell.querySelector("input")) return; // already editing
+            const current = cell.textContent;
+            const input = document.createElement("input");
+            input.value = current;
+            input.style.width="100%";
+            cell.innerHTML="";
+            cell.appendChild(input);
+            cell.classList.add("editing");
+            input.focus();
+            input.addEventListener("blur", saveCell);
+            input.addEventListener("keydown", function(e){if(e.key==="Enter") saveCell();});
+            
+            function saveCell(){
+                const rowIndex = cell.parentElement.getAttribute("data-index");
+                const field = cell.getAttribute("data-field");
+                users[rowIndex][field] = input.value.trim();
+                localStorage.setItem("users",JSON.stringify(users));
+                cell.classList.remove("editing");
+                renderUsers();
+            }
+        });
+    });
+}
+
+// GENERATE TEMP PASSWORD
+function generateTempPassword(length=8){
+    const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$";
+    let pw = "";
+    for(let i=0;i<length;i++) pw += chars.charAt(Math.floor(Math.random()*chars.length));
+    return pw;
+}
+
+// ADD USER
 function addUser(){
     const email = document.getElementById("userEmail").value.trim();
     const role = document.getElementById("userRole").value;
     const rep = document.getElementById("userRep").value.trim();
     if(!email){alert("Enter email"); return;}
-    users.push({email,role,rep});
+    const password = generateTempPassword();
+    users.push({email,role,rep,password});
     localStorage.setItem("users",JSON.stringify(users));
+    alert("Temporary password for " + email + ": " + password);
     document.getElementById("userEmail").value="";
     document.getElementById("userRep").value="";
     renderUsers();
 }
 
+// DELETE USER
 function deleteUser(i){
     if(confirm("Delete this user?")){
         users.splice(i,1);
@@ -130,19 +170,7 @@ function deleteUser(i){
     }
 }
 
-function editUser(i){
-    const u = users[i];
-    const newEmail = prompt("Edit Email:", u.email);
-    if(newEmail) u.email = newEmail;
-    const newRole = prompt("Edit Role (admin/salesrep):", u.role);
-    if(newRole) u.role = newRole;
-    const newRep = prompt("Edit Assigned Rep:", u.rep);
-    if(newRep !== null) u.rep = newRep;
-    localStorage.setItem("users",JSON.stringify(users));
-    renderUsers();
-}
-
-// initial render
+// INITIAL RENDER
 renderUsers();
 </script>
 
