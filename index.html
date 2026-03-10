@@ -1,36 +1,86 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Residual Portal Login</title>
-  <style>
-    body{font-family: Arial; background:#f4f6f9; display:flex; justify-content:center; align-items:center; height:100vh;}
-    .login-box{background:white; padding:40px; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,0.1); width:320px; text-align:center;}
-    input{width:100%; padding:10px; margin:10px 0; border:1px solid #ccc; border-radius:5px;}
-    button{width:100%; padding:10px; background:#0073ff; color:white; border:none; border-radius:5px; cursor:pointer;}
-    button:hover{background:#005fd1;}
-  </style>
+
+<title>Login</title>
+
+<style>
+body{
+font-family:Arial;
+background:#f4f6f9;
+padding:40px;
+}
+
+input{
+display:block;
+margin:10px 0;
+padding:8px;
+}
+
+button{
+padding:8px 15px;
+background:#0073aa;
+color:white;
+border:none;
+}
+</style>
+
 </head>
+
 <body>
-  <div class="login-box">
-    <h2>Residual Portal</h2>
-    <input type="email" id="email" placeholder="Email">
-    <input type="password" id="password" placeholder="Password">
-    <button onclick="login()">Log In</button>
-    <p id="error" style="color:red;"></p>
-  </div>
 
-  <script>
-    function login(){
-      var email = document.getElementById("email").value;
-      var password = document.getElementById("password").value;
+<h2>Portal Login</h2>
 
-      // Demo credentials
-      if(email === "admin@email.com" && password === "portal123"){
-        window.location.href = "dashboard.html";
-      } else {
-        document.getElementById("error").innerText = "Invalid login";
-      }
-    }
-  </script>
+Email
+<input id="email">
+
+Password
+<input id="password">
+
+<button onclick="login()">Login</button>
+
+<script>
+
+let users = JSON.parse(localStorage.getItem("users") || "[]")
+
+function login(){
+
+let email=document.getElementById("email").value
+let password=document.getElementById("password").value
+
+let user = users.find(u=>u.email==email && u.password==password)
+
+if(!user){
+
+alert("Invalid Login")
+
+return
+
+}
+
+localStorage.setItem("sessionUser",JSON.stringify(user))
+
+if(user.role=="admin"){
+
+window.location="dashboard.html"
+
+}
+
+if(user.role=="manager"){
+
+window.location="dashboard.html"
+
+}
+
+if(user.role=="rep"){
+
+window.location="my-residuals.html"
+
+}
+
+}
+
+</script>
+
 </body>
 </html>
