@@ -11,7 +11,7 @@ body { font-family: Arial; background: #f4f6f9; padding: 20px; }
 .nav a:hover { background: #005fd1; }
 h2 { margin-top: 20px; }
 input[type=text] { padding: 6px; width: 220px; margin-right: 5px; border-radius: 4px; border: 1px solid #ccc; }
-button { padding: 6px 12px; border-radius: 4px; border: none; background: #0073aa; color: white; cursor: pointer; }
+button { padding: 6px 12px; border-radius: 4px; border: none; background: #0073aa; color: white; cursor: pointer; margin-top: 5px; }
 button:hover { background: #005fd1; }
 table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; font-size: 14px; }
 th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
@@ -40,12 +40,10 @@ th { background: #0073aa; color: white; }
   <button onclick="searchMerchant()">Search</button>
 </div>
 
-<!-- Chart -->
 <div class="graph-container">
   <canvas id="merchantChart" width="600" height="250"></canvas>
 </div>
 
-<!-- Table -->
 <table id="merchantTable">
 <thead>
 <tr>
