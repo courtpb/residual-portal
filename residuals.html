@@ -72,9 +72,14 @@ th{background:#ecf0f1;}
 </div>
 
 <script>
+// Convert Excel serial date if needed (not used here, but keep for safety)
 function excelDateToMMYYYY(serial){
-    let date = new Date((serial - 25569) * 86400 * 1000)
-    return (date.getMonth()+1) + "/" + date.getFullYear()
+    let days = Math.floor(serial - 25569)
+    let utc = days * 86400 * 1000
+    let date = new Date(utc)
+    let month = date.getUTCMonth() + 1
+    let year = date.getUTCFullYear()
+    return month + "/" + year
 }
 
 function loadBatches(){
@@ -93,9 +98,14 @@ function loadBatches(){
 
 function importFile(){
     let file = document.getElementById("fileUpload").files[0]
-    let month = document.getElementById("residualMonth").value
+    let monthInput = document.getElementById("residualMonth").value
     let bucket = document.getElementById("bucket").value
     if(!file){ alert("Please upload a file"); return }
+    if(!monthInput){ alert("Please select a month/year"); return }
+
+    // Format monthInput "YYYY-MM" -> "MM/YYYY"
+    let parts = monthInput.split("-")
+    let selectedMonthYear = parts[1] + "/" + parts[0]
 
     let reader = new FileReader()
     reader.onload = function(e){
@@ -106,22 +116,13 @@ function importFile(){
         let range = XLSX.utils.decode_range(sheet['!ref'])
         let merchants = []
 
-        for(let R=2; R<=range.e.r; ++R){ // row 3
-            let monthCell = sheet['A'+(R+1)]
+        for(let R=2; R<=range.e.r; ++R){ // start at row 3
             let merchantCell = sheet['B'+(R+1)]
-            let dbaCell = sheet['C'+(R+1)]
-            let repCell = sheet['M'+(R+1)]
-            let totalCell = sheet['MP'+(R+1)] // <- MP column
-
             if(!merchantCell) continue
 
-            // Convert Excel serial date
-            let monthYear = ""
-            if(monthCell && monthCell.v){
-                if(typeof monthCell.v === "number"){
-                    monthYear = excelDateToMMYYYY(monthCell.v)
-                } else { monthYear = monthCell.v }
-            }
+            let dbaCell = sheet['C'+(R+1)]
+            let repCell = sheet['M'+(R+1)]
+            let totalCell = sheet['MP'+(R+1)]
 
             let merchant = merchantCell.v || ""
             let dba = dbaCell ? dbaCell.v : ""
@@ -129,23 +130,23 @@ function importFile(){
             let residual = totalCell && !isNaN(totalCell.v) ? parseFloat(totalCell.v) : 0
 
             merchants.push({
-                monthYear:monthYear,
-                merchant:merchant,
-                dba:dba,
-                repId:repId,
-                total:residual
+                monthYear: selectedMonthYear,
+                merchant: merchant,
+                dba: dba,
+                repId: repId,
+                total: residual
             })
         }
 
         let batches = JSON.parse(localStorage.getItem("residualBatches")) || []
         batches.push({
-            batchId:Date.now(),
-            month:month,
-            bucket:bucket,
-            merchants:merchants
+            batchId: Date.now(),
+            month: selectedMonthYear,
+            bucket: bucket,
+            merchants: merchants
         })
 
-        localStorage.setItem("residualBatches",JSON.stringify(batches))
+        localStorage.setItem("residualBatches", JSON.stringify(batches))
         loadBatches()
         alert("Residual file imported successfully")
     }
@@ -159,7 +160,7 @@ function deleteSelected(){
     checks.forEach(c=>{ indexes.push(parseInt(c.dataset.index)) })
     indexes.sort((a,b)=>b-a)
     indexes.forEach(i=>{ batches.splice(i,1) })
-    localStorage.setItem("residualBatches",JSON.stringify(batches))
+    localStorage.setItem("residualBatches", JSON.stringify(batches))
     loadBatches()
 }
 
