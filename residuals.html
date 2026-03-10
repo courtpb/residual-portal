@@ -115,9 +115,9 @@ document.getElementById("uploadForm").addEventListener("submit", function(e){
         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
         const jsonData = XLSX.utils.sheet_to_json(firstSheet,{header:1});
 
-        // Loop through rows starting at row 2 (skip headers)
-        for(let i=1;i<jsonData.length;i++){
-            const row=jsonData[i];
+        // Loop through rows starting at row 3 (skip first two rows)
+        for(let i = 2; i < jsonData.length; i++){
+            const row = jsonData[i];
             residuals.push({
                 monthYear: row[0] || monthYear,
                 merchant: row[1] || "",
