@@ -58,7 +58,7 @@ th{background:#0073aa;color:white;}
 </table>
 
 <script>
-// Example: current logged-in user
+// Current logged-in user example
 let currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}");
 
 // Example residuals data
@@ -67,9 +67,9 @@ let residuals = JSON.parse(localStorage.getItem("residuals") || "[]");
 // Filter residuals by user role
 function getVisibleResiduals(){
     if(currentUser.role === "admin"){
-        return residuals; // show all
+        return residuals;
     } else if(currentUser.role === "salesrep"){
-        return residuals.filter(r=>r.rep === currentUser.rep);
+        return residuals.filter(r => r.rep === currentUser.rep);
     } else {
         return [];
     }
@@ -85,10 +85,10 @@ function renderResiduals(){
     const tbody = document.getElementById("residualBody");
     const totalCell = document.getElementById("residualTotal");
     const visibleResiduals = sortResiduals(getVisibleResiduals());
-    tbody.innerHTML="";
-    if(visibleResiduals.length===0){
-        tbody.innerHTML='<tr><td colspan="4" style="text-align:center;">No residuals available.</td></tr>';
-        totalCell.textContent="$0";
+    tbody.innerHTML = "";
+    if(visibleResiduals.length === 0){
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No residuals available.</td></tr>';
+        totalCell.textContent = "$0";
         return;
     }
     let total = 0;
@@ -101,7 +101,7 @@ function renderResiduals(){
         </tr>`;
         total += parseFloat(r.amount);
     });
-    totalCell.textContent="$" + Math.round(total).toLocaleString();
+    totalCell.textContent = "$" + Math.round(total).toLocaleString();
 }
 
 // Render chart
