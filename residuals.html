@@ -1,17 +1,16 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Sales Reps</title>
+<title>Residuals</title>
 <style>
 body{font-family:Arial;background:#f4f6f9;padding:40px;}
 .nav a{margin-right:10px;padding:8px 15px;background:#0073aa;color:white;border-radius:5px;text-decoration:none;}
 .nav a.logout{background:#d00;}
 .nav a:hover{background:#005fd1;}
+input,button{padding:5px;margin:5px 0;}
 table{width:100%;border-collapse:collapse;margin-top:20px;background:white;}
 th,td{border:1px solid #ddd;padding:8px;text-align:left;}
 th{background:#0073aa;color:white;}
-input,button{padding:5px;margin:3px;}
-.code-group{display:flex;gap:5px;margin-bottom:3px;}
 </style>
 </head>
 <body>
@@ -28,124 +27,78 @@ input,button{padding:5px;margin:3px;}
 <a href="index.html" class="logout">Logout</a>
 </div>
 
-<h2>Sales Rep Settings</h2>
+<h2>Residuals Upload</h2>
 
-<h3>Add New Sales Rep</h3>
-First Name: <input id="repFirst" placeholder="First Name">
-Last Name: <input id="repLast" placeholder="Last Name">
+<h3>Upload Residual Report</h3>
 
-<div id="codesContainer">
-<div class="code-group">
-Rep Code: <input class="repCode" placeholder="Code">
-Split %: <input class="repSplit" type="number" min="0" max="100" placeholder="Split %">
-</div>
-</div>
-
-<button onclick="addCodeInput()">+ Add Another Code</button>
-<button onclick="addRep()">Add Sales Rep</button>
+Residual Month/Year: <input type="month" id="resMonth"><br>
+Residual Name / Bucket: <input type="text" id="resName"><br>
+Upload File: <input type="file" id="resFile"><br>
+<button onclick="addResidualReport()">Upload</button>
 
 <table>
 <thead>
 <tr>
-<th>First Name</th>
-<th>Last Name</th>
-<th>Codes & Splits</th>
+<th>Report Name</th>
+<th>Month/Year</th>
+<th>File Name</th>
 <th>Actions</th>
 </tr>
 </thead>
-<tbody id="repBody"></tbody>
+<tbody id="residualBody"></tbody>
 </table>
 
 <script>
-let reps = JSON.parse(localStorage.getItem("salesReps") || "[]");
+// store uploaded reports in localStorage for demo
+let residualReports = JSON.parse(localStorage.getItem("residualReports") || "[]");
 
-function renderTable(){
-    const tbody = document.getElementById("repBody");
+function renderResiduals(){
+    const tbody=document.getElementById("residualBody");
     tbody.innerHTML="";
-    reps.forEach((rep,i)=>{
-        const codesText = rep.codes.map(c=>`${c.code}:${c.split}%`).join(", ");
-        const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${rep.firstName}</td>
-                        <td>${rep.lastName}</td>
-                        <td>${codesText}</td>
-                        <td>
-                        <button onclick="editRep(${i})">Edit</button>
-                        <button onclick="deleteRep(${i})">Delete</button>
-                        </td>`;
+    residualReports.forEach((r,i)=>{
+        const tr=document.createElement("tr");
+        tr.innerHTML=`<td>${r.name}</td>
+                      <td>${r.month}</td>
+                      <td>${r.fileName}</td>
+                      <td><button onclick="deleteResidual(${i})">Delete</button></td>`;
         tbody.appendChild(tr);
     });
 }
 
-function addCodeInput(){
-    const container = document.getElementById("codesContainer");
-    const div = document.createElement("div");
-    div.className="code-group";
-    div.innerHTML=`Rep Code: <input class="repCode" placeholder="Code"> Split %: <input class="repSplit" type="number" min="0" max="100" placeholder="Split %">`;
-    container.appendChild(div);
-}
+function addResidualReport(){
+    const month=document.getElementById("resMonth").value;
+    const name=document.getElementById("resName").value.trim();
+    const file=document.getElementById("resFile").files[0];
 
-function addRep(){
-    const first=document.getElementById("repFirst").value.trim();
-    const last=document.getElementById("repLast").value.trim();
-    if(!first || !last){alert("Enter first and last name");return;}
-    const codeInputs=document.querySelectorAll("#codesContainer .code-group");
-    const codes=[];
-    codeInputs.forEach(ci=>{
-        const code=ci.querySelector(".repCode").value.trim();
-        const split=parseFloat(ci.querySelector(".repSplit").value);
-        if(code && !isNaN(split)) codes.push({code,split});
+    if(!month || !name || !file){
+        alert("Please fill all fields and select a file");
+        return;
+    }
+
+    residualReports.push({
+        month: month,
+        name: name,
+        fileName: file.name
     });
-    if(codes.length===0){alert("Add at least one rep code with split");return;}
-    reps.push({firstName:first,lastName:last,codes});
-    localStorage.setItem("salesReps",JSON.stringify(reps));
-    renderTable();
-    document.getElementById("repFirst").value="";
-    document.getElementById("repLast").value="";
-    document.getElementById("codesContainer").innerHTML=`<div class="code-group">
-    Rep Code: <input class="repCode" placeholder="Code">
-    Split %: <input class="repSplit" type="number" min="0" max="100" placeholder="Split %">
-    </div>`;
+
+    localStorage.setItem("residualReports",JSON.stringify(residualReports));
+    renderResiduals();
+
+    // reset fields
+    document.getElementById("resMonth").value="";
+    document.getElementById("resName").value="";
+    document.getElementById("resFile").value="";
 }
 
-function deleteRep(i){if(confirm("Delete this rep?")){reps.splice(i,1);localStorage.setItem("salesReps",JSON.stringify(reps));renderTable();}}
-
-function editRep(i){
-    const tbody=document.getElementById("repBody");
-    const tr=tbody.children[i];
-    const rep=reps[i];
-    const codesHtml=rep.codes.map((c,j)=>`<div class="code-group">
-    Code: <input class="editCode" data-index="${j}" value="${c.code}" style="width:60px;">
-    Split %: <input class="editSplit" data-index="${j}" type="number" min="0" max="100" value="${c.split}" style="width:50px;">
-    </div>`).join("");
-    tr.innerHTML=`<td><input id="editFirst" value="${rep.firstName}"></td>
-                  <td><input id="editLast" value="${rep.lastName}"></td>
-                  <td id="editCodes">${codesHtml}<br><button onclick="addNewCode(${i})">+ Add Code</button></td>
-                  <td>
-                  <button onclick="saveEdit(${i})">Save</button>
-                  <button onclick="cancelEdit()">Cancel</button>
-                  </td>`;
+function deleteResidual(i){
+    if(confirm("Delete this report?")){
+        residualReports.splice(i,1);
+        localStorage.setItem("residualReports",JSON.stringify(residualReports));
+        renderResiduals();
+    }
 }
 
-function addNewCode(i){reps[i].codes.push({code:"",split:0});editRep(i);}
-function saveEdit(i){
-    const tr=document.getElementById("repBody").children[i];
-    const rep=reps[i];
-    rep.firstName=document.getElementById("editFirst").value.trim();
-    rep.lastName=document.getElementById("editLast").value.trim();
-    const codeInputs=tr.querySelectorAll(".editCode");
-    const splitInputs=tr.querySelectorAll(".editSplit");
-    rep.codes=[];
-    codeInputs.forEach((ci,j)=>{
-        const code=ci.value.trim();
-        const split=parseFloat(splitInputs[j].value);
-        if(code && !isNaN(split)) rep.codes.push({code,split});
-    });
-    localStorage.setItem("salesReps",JSON.stringify(reps));
-    renderTable();
-}
-function cancelEdit(){renderTable();}
-
-renderTable();
+renderResiduals();
 </script>
 
 </body>
