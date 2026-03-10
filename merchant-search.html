@@ -80,7 +80,7 @@ function searchMerchant(){
         batch.merchants.forEach(m=>{
             if(m.merchant.toLowerCase().includes(query) || m.dba.toLowerCase().includes(query)){
                 results.push({
-                    monthYear: m.monthYear,
+                    monthYear: batch.month,   // <- use batch month, NOT Excel column
                     merchant: m.merchant,
                     dba: m.dba,
                     repId: m.repId,
