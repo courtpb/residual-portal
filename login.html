@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Residual Portal Login</title>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    font-size: 18px;
+    background-color: #f4f6f9;
+    margin: 0;
+    padding: 20px;
+}
+h2 {
+    margin-bottom: 20px;
+}
+input[type=text], input[type=password] {
+    padding: 10px;
+    font-size: 16px;
+    width: 280px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    margin-bottom: 10px;
+    display: block;
+}
+button {
+    padding: 10px 16px;
+    font-size: 16px;
+    border: none;
+    border-radius: 4px;
+    background-color: #0073aa;
+    color: white;
+    cursor: pointer;
+}
+button:hover { background-color: #005fd1; }
+</style>
+</head>
+<body>
+
+<h2>Residual Portal Login</h2>
+
+<input type="text" id="email" placeholder="Email">
+<input type="password" id="password" placeholder="Password">
+<button onclick="login()">Log In</button>
+
+<script>
+// Preload the admin user
+let users = [
+  {email: "admin@email.com", password: "portal123", permission: "admin", assignedRep: null}
+];
+
+// Load additional users from localStorage if any
+let storedUsers = localStorage.getItem("users");
+if(storedUsers){
+    users = users.concat(JSON.parse(storedUsers));
+}
+
+function login(){
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+
+    const user = users.find(u => u.email === email && u.password === password);
+
+    if(user){
+        localStorage.setItem("loggedInUser", JSON.stringify(user));
+        window.location.href = "dashboard.html"; // redirect to your dashboard page
+    } else {
+        alert("Invalid email or password");
+    }
+}
+
+// Function to create a new user (for future Users page)
+function createUser(email, password, permission, assignedRep){
+    let newUser = {email, password, permission, assignedRep};
+    users.push(newUser);
+
+    // Save only the non-admin users to localStorage
+    let saveUsers = users.filter(u => u.email !== "admin@email.com");
+    localStorage.setItem("users", JSON.stringify(saveUsers));
+}
+</script>
+
+</body>
+</html>
