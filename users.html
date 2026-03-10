@@ -4,16 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Users Management</title>
-<link rel="stylesheet" href="style.css"> <!-- optional if you have shared CSS for menu/layout -->
+<link rel="stylesheet" href="style.css"> <!-- assumes shared CSS for portal -->
 <style>
-/* Page styling to match other portal pages exactly */
-body { font-family: Arial, sans-serif; font-size: 16px; background: #f4f6f9; margin:0; padding:0; }
+/* Users page matches the layout of all other portal pages */
+body { font-family: Arial, sans-serif; font-size: 16px; background: #f4f6f9; margin: 0; padding: 0; }
 header { background: #0073aa; color: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; }
 header h1 { margin: 0; font-size: 20px; }
-nav a { color: white; text-decoration: none; margin-left: 20px; font-weight: bold; font-size: 16px; }
-nav a:hover { text-decoration: underline; }
+nav a { color: white; text-decoration: none; margin-right: 15px; font-weight: bold; font-size: 16px; padding: 8px 12px; border-radius: 4px; background: #005f99; }
+nav a:hover { background: #004066; }
 main { padding: 20px; max-width: 1200px; margin: 0 auto; }
-input, select { padding: 8px; font-size: 16px; margin-bottom: 10px; width: 300px; display: inline-block; margin-right: 10px; }
+form { margin-bottom: 20px; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 10px; }
+input, select { padding: 8px; font-size: 16px; width: 250px; }
 button { padding: 8px 12px; font-size: 16px; border: none; border-radius: 4px; background: #0073aa; color: white; cursor: pointer; }
 button:hover { background: #005fd1; }
 table { width: 100%; border-collapse: collapse; margin-top: 20px; }
@@ -41,7 +42,7 @@ th { background: #eaeaea; }
 <h2>Users Management</h2>
 <p>Create portal users with limited view permissions here.</p>
 
-<div>
+<form onsubmit="event.preventDefault(); addUser();">
     <input type="text" id="newEmail" placeholder="Email / Username">
     <input type="text" id="newAssignedRep" placeholder="Assigned Rep">
     <select id="newPermission">
@@ -49,8 +50,8 @@ th { background: #eaeaea; }
         <option value="sales">Sales Rep</option>
     </select>
     <input type="text" id="newPassword" placeholder="Password (temporary)">
-    <button onclick="addUser()">Add User</button>
-</div>
+    <button type="submit">Add User</button>
+</form>
 
 <table id="usersTable">
 <thead>
