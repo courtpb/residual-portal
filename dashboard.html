@@ -29,7 +29,6 @@ th{background:#0073aa;color:white;}
 <h2>Dashboard</h2>
 <p>Welcome to your portal! Here you can see summary info.</p>
 
-<!-- Example Dashboard Table -->
 <table>
 <thead>
 <tr>
@@ -39,27 +38,20 @@ th{background:#0073aa;color:white;}
 <th>Month</th>
 </tr>
 </thead>
-<tbody id="dashboardBody">
-<!-- Data will be dynamically inserted -->
-</tbody>
+<tbody id="dashboardBody"></tbody>
 </table>
 
 <script>
-let residuals = JSON.parse(localStorage.getItem("residualData") || "[]");
+let residuals = JSON.parse(localStorage.getItem("residualReports") || "[]");
 let reps = JSON.parse(localStorage.getItem("salesReps") || "[]");
 
-function renderDashboard(monthFilter="") {
+function renderDashboard(monthFilter=""){
     const tbody = document.getElementById("dashboardBody");
     tbody.innerHTML="";
     reps.forEach(rep=>{
-        let totalVolume=0, totalResidual=0;
+        let totalVolume=0,totalResidual=0;
         residuals.forEach(r=>{
-            if(rep.codes.some(c=>c.code===r.rep)){
-                if(!monthFilter || r.month===monthFilter){
-                    totalVolume+=parseFloat(r.volume);
-                    totalResidual+=parseFloat(r.residual);
-                }
-            }
+            // placeholder: backend will calculate volume/residual
         });
         const tr=document.createElement("tr");
         tr.innerHTML=`<td>${rep.firstName} ${rep.lastName}</td>
