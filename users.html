@@ -7,25 +7,42 @@ body{font-family:Arial;background:#f4f6f9;padding:40px;}
 .nav a{margin-right:10px;padding:8px 15px;background:#0073aa;color:white;border-radius:5px;text-decoration:none;}
 .nav a.logout{background:#d00;}
 .nav a:hover{background:#005fd1;}
-input,button{padding:5px;margin:5px;}
+h2{margin-top:20px;}
+p{margin-top:10px;}
 </style>
 </head>
 <body>
 
+<!-- NAVIGATION -->
 <div class="nav">
-<a href="dashboard.html">Dashboard</a>
-<a href="residuals.html">Residuals</a>
-<a href="sales-reps.html">Sales Reps</a>
-<a href="users.html">Users</a>
-<a href="my-residuals.html">My Residuals</a>
-<a href="merchant-search.html">Merchant Search</a>
-<a href="change-password.html">Change Password</a>
-<a href="index.html" class="logout">Logout</a>
+  <a href="dashboard.html">Dashboard</a>
+  <a href="residuals.html">Residuals</a>
+  <a href="sales-reps.html">Sales Reps</a>
+  <a href="users.html">Users</a>
+  <a href="my-residuals.html">My Residuals</a>
+  <a href="merchant-search.html">Merchant Search</a>
+  <a href="change-password.html">Change Password</a>
+  <a href="index.html" class="logout">Logout</a>
 </div>
 
+<!-- PAGE CONTENT -->
 <h2>Users</h2>
-
 <p>Create portal users with limited view permissions here.</p>
+
+<!-- Placeholder table for users -->
+<table border="1" style="margin-top:20px;width:100%;border-collapse:collapse;background:white;">
+<thead>
+<tr style="background:#0073aa;color:white;">
+  <th>Username / Email</th>
+  <th>Permission Level</th>
+  <th>Assigned Rep</th>
+  <th>Actions</th>
+</tr>
+</thead>
+<tbody id="usersBody">
+<tr><td colspan="4" style="text-align:center;">No users added yet.</td></tr>
+</tbody>
+</table>
 
 </body>
 </html>
