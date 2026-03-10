@@ -71,9 +71,8 @@ function loadResiduals(){
 
     batches.forEach(batch=>{
         batch.merchants.forEach(m=>{
-            // If you want to restrict by sales rep login, add logic here
             allResiduals.push({
-                monthYear: m.monthYear,
+                monthYear: batch.month,       // <- use batch month, NOT Excel column
                 merchant: m.merchant,
                 dba: m.dba,
                 repId: m.repId,
