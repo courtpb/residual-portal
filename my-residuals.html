@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>My Residuals</title>
+
+<style>
+
+body{
+font-family:Arial;
+background:#f4f6f9;
+padding:40px;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+background:white;
+}
+
+th,td{
+border:1px solid #ddd;
+padding:8px;
+}
+
+th{
+background:#0073aa;
+color:white;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h2>My Residuals</h2>
+
+Month
+<input type="month" id="month">
+
+<table>
+
+<thead>
+
+<tr>
+<th>Merchant</th>
+<th>Volume</th>
+<th>Residual</th>
+</tr>
+
+</thead>
+
+<tbody id="residualTable"></tbody>
+
+</table>
+
+<script>
+
+let user = JSON.parse(localStorage.getItem("sessionUser"))
+
+let residuals = JSON.parse(localStorage.getItem("residualData") || "[]")
+
+function loadResiduals(){
+
+let table=document.getElementById("residualTable")
+
+table.innerHTML=""
+
+let month=document.getElementById("month").value
+
+let filtered=residuals.filter(r=>user.codes.includes(r.rep))
+
+filtered.forEach(r=>{
+
+let row=document.createElement("tr")
+
+row.innerHTML=`
+<td>${r.merchant}</td>
+<td>${r.volume}</td>
+<td>${r.residual}</td>
+`
+
+table.appendChild(row)
+
+})
+
+}
+
+document.getElementById("month").addEventListener("change",loadResiduals)
+
+</script>
+
+</body>
+</html>
