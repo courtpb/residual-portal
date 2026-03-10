@@ -45,16 +45,24 @@ button:hover { background-color: #005fd1; }
 <button onclick="login()">Log In</button>
 
 <script>
-// Preload the admin user
-let users = [
-  {email: "admin@email.com", password: "portal123", permission: "admin", assignedRep: null}
-];
+// Always ensure admin exists
+const defaultAdmin = {
+  email: "admin@email.com",
+  password: "portal123",
+  permission: "admin",
+  assignedRep: null
+};
 
-// Load additional users from localStorage if any
-let storedUsers = localStorage.getItem("users");
-if(storedUsers){
-    users = users.concat(JSON.parse(storedUsers));
+// Load saved users from localStorage
+let savedUsers = [];
+try {
+  savedUsers = JSON.parse(localStorage.getItem("users")) || [];
+} catch(e){
+  savedUsers = [];
 }
+
+// Combine admin with saved users
+let users = [defaultAdmin, ...savedUsers];
 
 function login(){
     const email = document.getElementById("email").value.trim();
@@ -64,20 +72,20 @@ function login(){
 
     if(user){
         localStorage.setItem("loggedInUser", JSON.stringify(user));
-        window.location.href = "dashboard.html"; // redirect to your dashboard page
+        window.location.href = "dashboard.html";
     } else {
         alert("Invalid email or password");
     }
 }
 
-// Function to create a new user (for future Users page)
+// Example function for adding new users (for your Users page)
 function createUser(email, password, permission, assignedRep){
+    if(!email || !password) return;
     let newUser = {email, password, permission, assignedRep};
     users.push(newUser);
-
-    // Save only the non-admin users to localStorage
-    let saveUsers = users.filter(u => u.email !== "admin@email.com");
-    localStorage.setItem("users", JSON.stringify(saveUsers));
+    // Save all non-admin users
+    const nonAdminUsers = users.filter(u => u.email !== defaultAdmin.email);
+    localStorage.setItem("users", JSON.stringify(nonAdminUsers));
 }
 </script>
 
