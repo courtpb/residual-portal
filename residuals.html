@@ -68,14 +68,18 @@ th{background:#ecf0f1;}
 </div>
 
 <script>
+// --- Load and sort batches oldest → newest robustly ---
 function loadBatches(){
     let batches = JSON.parse(localStorage.getItem("residualBatches")) || []
 
-    // --- Sort oldest to newest by month/year ---
     batches.sort((a,b)=>{
-        let [aM,aY] = a.month.split("/")
-        let [bM,bY] = b.month.split("/")
-        return new Date(aY,aM-1) - new Date(bY,bM-1)
+        function parseMonth(m){
+            if(!m) return new Date(3000,0) // put invalid/missing dates at end
+            let parts = m.split("/")
+            if(parts.length!==2) return new Date(3000,0)
+            return new Date(parseInt(parts[1]), parseInt(parts[0])-1)
+        }
+        return parseMonth(a.month) - parseMonth(b.month)
     })
 
     let tbody = document.querySelector("#batchTable tbody")
@@ -90,6 +94,7 @@ function loadBatches(){
     })
 }
 
+// --- Import residual Excel file dynamically ---
 function importFile(){
     let file = document.getElementById("fileUpload").files[0]
     let monthInput = document.getElementById("residualMonth").value
@@ -108,7 +113,7 @@ function importFile(){
         let range = XLSX.utils.decode_range(sheet['!ref'])
         let merchants = []
 
-        // --- Step 1: find residual column dynamically ---
+        // --- Find residual column dynamically ---
         let headerMap = {}
         for(let C=range.s.c; C<=range.e.c; C++){
             let addr = XLSX.utils.encode_cell({r:0,c:C})
@@ -163,6 +168,7 @@ function importFile(){
     reader.readAsArrayBuffer(file)
 }
 
+// --- Delete selected batches ---
 function deleteSelected(){
     let batches = JSON.parse(localStorage.getItem("residualBatches")) || []
     let checks = document.querySelectorAll("input[type=checkbox]:checked")
