@@ -39,7 +39,6 @@ th{background:#ecf0f1;}
 <div class="container">
 
 <h3>Import Residual File</h3>
-<br>
 <label>Residual Month/Year:</label>
 <input type="month" id="residualMonth">
 <br><br>
@@ -72,7 +71,7 @@ th{background:#ecf0f1;}
 </div>
 
 <script>
-// Convert Excel serial date if needed (not used here, but keep for safety)
+// Excel serial to MM/YYYY (if needed, kept for safety)
 function excelDateToMMYYYY(serial){
     let days = Math.floor(serial - 25569)
     let utc = days * 86400 * 1000
@@ -130,7 +129,7 @@ function importFile(){
             let residual = totalCell && !isNaN(totalCell.v) ? parseFloat(totalCell.v) : 0
 
             merchants.push({
-                monthYear: selectedMonthYear,
+                monthYear: selectedMonthYear, // <- use selected month
                 merchant: merchant,
                 dba: dba,
                 repId: repId,
@@ -164,6 +163,7 @@ function deleteSelected(){
     loadBatches()
 }
 
+// Initial load
 loadBatches()
 </script>
 
