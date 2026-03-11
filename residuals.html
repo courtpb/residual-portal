@@ -71,16 +71,6 @@ th{background:#ecf0f1;}
 </div>
 
 <script>
-// Excel serial to MM/YYYY (if needed, kept for safety)
-function excelDateToMMYYYY(serial){
-    let days = Math.floor(serial - 25569)
-    let utc = days * 86400 * 1000
-    let date = new Date(utc)
-    let month = date.getUTCMonth() + 1
-    let year = date.getUTCFullYear()
-    return month + "/" + year
-}
-
 function loadBatches(){
     let batches = JSON.parse(localStorage.getItem("residualBatches")) || []
     let tbody = document.querySelector("#batchTable tbody")
@@ -115,21 +105,41 @@ function importFile(){
         let range = XLSX.utils.decode_range(sheet['!ref'])
         let merchants = []
 
+        // Step 1: Detect headers in first row
+        let headerMap = {}
+        for(let C=range.s.c; C<=range.e.c; C++){
+            let cellAddress = XLSX.utils.encode_cell({r:0,c:C})
+            let cell = sheet[cellAddress]
+            if(cell && cell.v){
+                headerMap[cell.v.toString().toLowerCase().trim()] = C
+            }
+        }
+
+        let merchantCol = headerMap['merchant number'] || headerMap['merchant id'] || 1  // default B
+        let dbaCol = headerMap['dba'] || 2
+        let repCol = headerMap['sales rep id'] || headerMap['rep id'] || headerMap['m'] || 12
+        let residualCol = headerMap['residual']
+
         for(let R=2; R<=range.e.r; ++R){ // start at row 3
-            let merchantCell = sheet['B'+(R+1)]
-            if(!merchantCell) continue
+            let getCell = (colIdx) => {
+                let addr = XLSX.utils.encode_cell({r:R, c:colIdx})
+                let cell = sheet[addr]
+                return cell ? cell.v : ""
+            }
 
-            let dbaCell = sheet['C'+(R+1)]
-            let repCell = sheet['M'+(R+1)]
-            let totalCell = sheet['MP'+(R+1)]
+            let merchant = getCell(merchantCol)
+            if(!merchant) continue
 
-            let merchant = merchantCell.v || ""
-            let dba = dbaCell ? dbaCell.v : ""
-            let repId = repCell ? repCell.v : ""
-            let residual = totalCell && !isNaN(totalCell.v) ? parseFloat(totalCell.v) : 0
+            let dba = getCell(dbaCol)
+            let repId = getCell(repCol)
+            let residual = 0
+            if(residualCol !== undefined){
+                let val = getCell(residualCol)
+                residual = val && !isNaN(val) ? parseFloat(val) : 0
+            }
 
             merchants.push({
-                monthYear: selectedMonthYear, // <- use selected month
+                monthYear: selectedMonthYear,
                 merchant: merchant,
                 dba: dba,
                 repId: repId,
