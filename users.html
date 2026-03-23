@@ -3,15 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Users Management</title>
+<title>Users Management Test</title>
 <style>
-body{font-family:Arial;margin:0;padding:0;background:#f4f6f9;}
-header{background:#2c3e50;color:#fff;padding:15px;}
+body{font-family:Arial;background:#f4f6f9;margin:0;}
+header{background:#2c3e50;color:white;padding:15px;}
 nav{background:#34495e;padding:10px;}
-nav a{color:#fff;margin-right:15px;text-decoration:none;font-weight:bold;}
+nav a{color:white;margin-right:15px;text-decoration:none;font-weight:bold;}
 .container{padding:20px;}
 input,select{padding:8px;margin:5px 0;width:100%;border-radius:4px;border:1px solid #ccc;}
-button{background:#3498db;color:#fff;padding:10px 15px;border:none;border-radius:4px;cursor:pointer;margin-top:10px;}
+button{background:#3498db;color:white;padding:10px 15px;border:none;border-radius:4px;cursor:pointer;margin-top:10px;}
 button:hover{background:#2980b9;}
 table{width:100%;border-collapse:collapse;margin-top:20px;}
 th,td{border:1px solid #ddd;padding:8px;text-align:left;}
@@ -19,20 +19,19 @@ th{background:#ecf0f1;}
 </style>
 </head>
 <body>
-
 <header><h2>Residual Portal</h2></header>
 <nav>
-<a href="dashboard.html">Dashboard</a>
-<a href="residuals.html">Import Residuals</a>
-<a href="my-residuals.html">My Residuals</a>
-<a href="merchant-search.html">Merchant Search</a>
-<a href="users.html">Users</a>
-<a href="index.html">Logout</a>
+<a href="#">Dashboard</a>
+<a href="#">Residuals</a>
+<a href="#">My Residuals</a>
+<a href="#">Merchant Search</a>
+<a href="#">Users</a>
+<a href="#">Logout</a>
 </nav>
 
 <div class="container">
-
 <h3>Add / Update User</h3>
+<div>
 <label>Email:</label>
 <input type="email" id="newEmail" placeholder="Email">
 <label>Password:</label>
@@ -42,11 +41,12 @@ th{background:#ecf0f1;}
 <option value="rep">Sales Rep</option>
 <option value="admin">Admin</option>
 </select>
-<label>Rep Codes (comma-separated for sales reps):</label>
+<label>Rep Codes (comma-separated):</label>
 <input type="text" id="newRepCodes" placeholder="08040-004,08040-005">
-<label>Residual Split % (for Sales Reps):</label>
-<input type="number" id="newSplit" placeholder="50" min="0" max="100">
+<label>Residual Split %:</label>
+<input type="number" id="newSplit" min="0" max="100" placeholder="50">
 <button id="addUserBtn" type="button">Add / Update User</button>
+</div>
 
 <h3>Existing Users</h3>
 <table id="usersTable">
@@ -61,92 +61,81 @@ th{background:#ecf0f1;}
 </thead>
 <tbody></tbody>
 </table>
-
 </div>
 
 <script>
 document.addEventListener("DOMContentLoaded", function(){
 
-    console.log("Users page loaded")
+    console.log("Users JS loaded")
 
-    // Initialize localStorage if empty
     if(!localStorage.getItem("users")){
-        console.log("Creating default admin user")
         localStorage.setItem("users", JSON.stringify([{email:"admin@email.com",password:"portal123",role:"admin",repCodes:[],split:0}]))
     }
 
     function loadUsers(){
         let users = JSON.parse(localStorage.getItem("users")) || []
         let tbody = document.querySelector("#usersTable tbody")
-        tbody.innerHTML = ""
+        tbody.innerHTML=""
         users.forEach((u,i)=>{
-            let tr = document.createElement("tr")
-            tr.innerHTML = `
-                <td><input type="text" value="${u.email}" onchange="editUser(${i},'email',this.value)"></td>
-                <td>
-                    <select onchange="editUser(${i},'role',this.value)">
-                        <option value="admin" ${u.role==='admin'?'selected':''}>Admin</option>
-                        <option value="rep" ${u.role==='rep'?'selected':''}>Sales Rep</option>
-                    </select>
-                </td>
-                <td><input type="text" value="${u.repCodes.join(', ')}" onchange="editUser(${i},'repCodes',this.value)"></td>
-                <td><input type="number" value="${u.split||0}" min="0" max="100" onchange="editUser(${i},'split',this.value)"></td>
-                <td><button onclick="deleteUser(${i})">Delete</button></td>
+            let tr=document.createElement("tr")
+            tr.innerHTML=`
+            <td><input type="text" value="${u.email}" onchange="editUser(${i},'email',this.value)"></td>
+            <td><select onchange="editUser(${i},'role',this.value)">
+                <option value="admin" ${u.role==='admin'?'selected':''}>Admin</option>
+                <option value="rep" ${u.role==='rep'?'selected':''}>Sales Rep</option>
+            </select></td>
+            <td><input type="text" value="${u.repCodes.join(', ')}" onchange="editUser(${i},'repCodes',this.value)"></td>
+            <td><input type="number" value="${u.split||0}" min="0" max="100" onchange="editUser(${i},'split',this.value)"></td>
+            <td><button onclick="deleteUser(${i})">Delete</button></td>
             `
             tbody.appendChild(tr)
         })
     }
 
-    window.editUser = function(index, field, value){
-        let users = JSON.parse(localStorage.getItem("users")) || []
-        if(field==='repCodes') value = value.split(',').map(s=>s.trim()).filter(s=>s)
-        if(field==='split') value = parseFloat(value) || 0
-        users[index][field]=value
-        localStorage.setItem("users", JSON.stringify(users))
+    window.editUser=function(i,field,value){
+        let users=JSON.parse(localStorage.getItem("users"))||[]
+        if(field==='repCodes') value=value.split(",").map(s=>s.trim()).filter(s=>s)
+        if(field==='split') value=parseFloat(value)||0
+        users[i][field]=value
+        localStorage.setItem("users",JSON.stringify(users))
     }
 
-    window.deleteUser = function(index){
+    window.deleteUser=function(i){
         if(!confirm("Are you sure?")) return
-        let users = JSON.parse(localStorage.getItem("users")) || []
-        users.splice(index,1)
-        localStorage.setItem("users", JSON.stringify(users))
+        let users=JSON.parse(localStorage.getItem("users"))||[]
+        users.splice(i,1)
+        localStorage.setItem("users",JSON.stringify(users))
         loadUsers()
     }
 
-    function addOrUpdateUser(){
+    function addUser(){
         console.log("Add button clicked")
-        let email = document.getElementById("newEmail").value.trim().toLowerCase()
-        let password = document.getElementById("newPassword").value
-        let role = document.getElementById("newRole").value
-        let repCodes = document.getElementById("newRepCodes").value.split(',').map(s=>s.trim()).filter(s=>s)
-        let split = parseFloat(document.getElementById("newSplit").value)||0
+        let email=document.getElementById("newEmail").value.trim().toLowerCase()
+        let password=document.getElementById("newPassword").value
+        let role=document.getElementById("newRole").value
+        let repCodes=document.getElementById("newRepCodes").value.split(",").map(s=>s.trim()).filter(s=>s)
+        let split=parseFloat(document.getElementById("newSplit").value)||0
 
         if(!email || !password){ alert("Email and password required"); return }
 
-        let users = JSON.parse(localStorage.getItem("users"))||[]
-        let existing = users.find(u=>u.email===email)
-        if(existing){
-            existing.password=password
-            existing.role=role
-            existing.repCodes=repCodes
-            existing.split=split
-        } else {
-            users.push({email,password,role,repCodes,split})
-        }
+        let users=JSON.parse(localStorage.getItem("users"))||[]
+        let existing=users.find(u=>u.email===email)
+        if(existing){ existing.password=password; existing.role=role; existing.repCodes=repCodes; existing.split=split }
+        else{ users.push({email,password,role,repCodes,split}) }
+
         localStorage.setItem("users",JSON.stringify(users))
         loadUsers()
         document.getElementById("newEmail").value=""
         document.getElementById("newPassword").value=""
         document.getElementById("newRepCodes").value=""
         document.getElementById("newSplit").value=""
-        alert("User added/updated!")
+        alert("User added/updated")
     }
 
-    document.getElementById("addUserBtn").addEventListener("click", addOrUpdateUser)
+    document.getElementById("addUserBtn").addEventListener("click", addUser)
 
     loadUsers()
 })
 </script>
-
 </body>
 </html>
