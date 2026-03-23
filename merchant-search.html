@@ -21,6 +21,7 @@ th{background:#ecf0f1;}
 </head>
 
 <body>
+
 <header>
 <h2>Residual Portal</h2>
 </header>
@@ -37,6 +38,7 @@ th{background:#ecf0f1;}
 <div class="container">
 
 <h3>Merchant Search</h3>
+
 <label>Enter Merchant ID or DBA:</label>
 <input type="text" id="searchInput">
 <button onclick="searchMerchant()">Search</button>
@@ -53,6 +55,7 @@ th{background:#ecf0f1;}
 </tr>
 </thead>
 <tbody></tbody>
+
 <tfoot>
 <tr class="total-row">
 <td colspan="5">Total</td>
@@ -63,24 +66,36 @@ th{background:#ecf0f1;}
 <td id="avgResidual">$0</td>
 </tr>
 </tfoot>
+
 </table>
 
 </div>
 
 <script>
+function parseMonth(m){
+    if(!m) return new Date(0,0)
+    let parts = m.split("/")
+    if(parts.length !== 2) return new Date(0,0)
+    return new Date(parseInt(parts[1]), parseInt(parts[0]) - 1)
+}
+
 function searchMerchant(){
     let query = document.getElementById("searchInput").value.trim().toLowerCase()
     let tbody = document.querySelector("#resultTable tbody")
-    tbody.innerHTML=""
+    tbody.innerHTML = ""
 
     let batches = JSON.parse(localStorage.getItem("residualBatches")) || []
     let results = []
 
+    // --- Collect matching merchants ---
     batches.forEach(batch=>{
         batch.merchants.forEach(m=>{
-            if(m.merchant.toLowerCase().includes(query) || m.dba.toLowerCase().includes(query)){
+            if(
+                m.merchant.toString().toLowerCase().includes(query) ||
+                m.dba.toString().toLowerCase().includes(query)
+            ){
                 results.push({
-                    monthYear: batch.month,   // <- use batch month, NOT Excel column
+                    monthYear: batch.month,
                     merchant: m.merchant,
                     dba: m.dba,
                     repId: m.repId,
@@ -91,27 +106,30 @@ function searchMerchant(){
         })
     })
 
-    // Sort most recent first
+    // 🔥 CRITICAL FIX: SORT AFTER FILTERING (newest → oldest)
     results.sort((a,b)=>{
-        let [aMonth,aYear] = a.monthYear.split("/")
-        let [bMonth,bYear] = b.monthYear.split("/")
-        return new Date(bYear,aMonth-1) - new Date(aYear,bMonth-1)
+        return parseMonth(b.monthYear) - parseMonth(a.monthYear)
     })
 
+    // --- Render table ---
     let totalResidual = 0
+
     results.forEach(r=>{
         let row = document.createElement("tr")
-        row.innerHTML = `<td>${r.monthYear}</td>
-                         <td>${r.merchant}</td>
-                         <td>${r.dba}</td>
-                         <td>${r.repId}</td>
-                         <td>${r.bucket}</td>
-                         <td>$${r.total.toFixed(2)}</td>`
+        row.innerHTML = `
+            <td>${r.monthYear}</td>
+            <td>${r.merchant}</td>
+            <td>${r.dba}</td>
+            <td>${r.repId}</td>
+            <td>${r.bucket}</td>
+            <td>$${r.total.toFixed(2)}</td>
+        `
         tbody.appendChild(row)
         totalResidual += r.total
     })
 
     let avgResidual = results.length ? totalResidual / results.length : 0
+
     document.getElementById("totalResidual").innerText = "$" + totalResidual.toFixed(2)
     document.getElementById("avgResidual").innerText = "$" + avgResidual.toFixed(2)
 }
