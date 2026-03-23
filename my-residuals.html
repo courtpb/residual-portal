@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>My Residuals</title>
-
 <style>
 body{font-family:Arial;background:#f4f6f9;margin:0;}
 header{background:#2c3e50;color:white;padding:15px;}
@@ -17,12 +16,8 @@ th{background:#ecf0f1;}
 .total-row{font-weight:bold;background:#ecf0f1;}
 </style>
 </head>
-
 <body>
-<header>
-<h2>Residual Portal</h2>
-</header>
-
+<header><h2>Residual Portal</h2></header>
 <nav>
 <a href="dashboard.html">Dashboard</a>
 <a href="residuals.html">Import Residuals</a>
@@ -33,7 +28,6 @@ th{background:#ecf0f1;}
 </nav>
 
 <div class="container">
-
 <h3>My Residuals</h3>
 
 <table id="residualTable">
@@ -59,56 +53,64 @@ th{background:#ecf0f1;}
 </tr>
 </tfoot>
 </table>
-
 </div>
 
 <script>
-function loadResiduals(){
-    let tbody = document.querySelector("#residualTable tbody")
-    tbody.innerHTML=""
-    let batches = JSON.parse(localStorage.getItem("residualBatches")) || []
-    let allResiduals = []
+let user = JSON.parse(localStorage.getItem("loggedInUser"))
+if(!user){ window.location.href="index.html" }
 
-    batches.forEach(batch=>{
-        batch.merchants.forEach(m=>{
-            allResiduals.push({
-                monthYear: batch.month,       // <- use batch month, NOT Excel column
-                merchant: m.merchant,
-                dba: m.dba,
-                repId: m.repId,
-                bucket: batch.bucket,
-                total: m.total
-            })
+let batches = JSON.parse(localStorage.getItem("residualBatches")) || []
+let allMerchants = []
+
+batches.forEach(batch=>{
+    batch.merchants.forEach(m=>{
+        allMerchants.push({
+            monthYear: batch.month,
+            merchant: m.merchant,
+            dba: m.dba,
+            repCode: m.repId,
+            bucket: batch.bucket,
+            total: m.total
         })
     })
+})
 
-    // Sort most recent first
-    allResiduals.sort((a,b)=>{
-        let [aMonth,aYear] = a.monthYear.split("/")
-        let [bMonth,bYear] = b.monthYear.split("/")
-        return new Date(bYear,aMonth-1) - new Date(aYear,bMonth-1)
-    })
-
-    let totalResidual = 0
-    allResiduals.forEach(r=>{
-        let row = document.createElement("tr")
-        row.innerHTML = `<td>${r.monthYear}</td>
-                         <td>${r.merchant}</td>
-                         <td>${r.dba}</td>
-                         <td>${r.repId}</td>
-                         <td>${r.bucket}</td>
-                         <td>$${r.total.toFixed(2)}</td>`
-        tbody.appendChild(row)
-        totalResidual += r.total
-    })
-
-    let avgResidual = allResiduals.length ? totalResidual / allResiduals.length : 0
-    document.getElementById("totalResidual").innerText = "$" + totalResidual.toFixed(2)
-    document.getElementById("avgResidual").innerText = "$" + avgResidual.toFixed(2)
+// Filter by sales rep
+if(user.role==="rep"){
+    allMerchants = allMerchants.filter(m => user.repCodes.includes(m.repCode))
 }
 
-loadResiduals()
-</script>
+// Sort newest → oldest
+allMerchants.sort((a,b)=>{
+    let parseMonth = (m)=>{
+        let p = m.split("/")
+        return new Date(parseInt(p[1]), parseInt(p[0])-1).getTime()
+    }
+    return parseMonth(b.monthYear) - parseMonth(a.monthYear)
+})
 
+// Render table
+let tbody = document.querySelector("#residualTable tbody")
+tbody.innerHTML=""
+let totalResidual = 0
+
+allMerchants.forEach(r=>{
+    let row = document.createElement("tr")
+    row.innerHTML = `
+        <td>${r.monthYear}</td>
+        <td>${r.merchant}</td>
+        <td>${r.dba}</td>
+        <td>${r.repCode}</td>
+        <td>${r.bucket}</td>
+        <td>$${r.total.toFixed(2)}</td>
+    `
+    tbody.appendChild(row)
+    totalResidual += r.total
+})
+
+let avgResidual = allMerchants.length ? totalResidual / allMerchants.length : 0
+document.getElementById("totalResidual").innerText = "$" + totalResidual.toFixed(2)
+document.getElementById("avgResidual").innerText = "$" + avgResidual.toFixed(2)
+</script>
 </body>
 </html>
