@@ -67,12 +67,7 @@ th{background:#ecf0f1;}
 </div>
 
 <script>
-// Redirect if not logged in or not admin
-let loggedIn = JSON.parse(localStorage.getItem("loggedInUser"))
-if(!loggedIn){ window.location.href="index.html" }
-if(loggedIn.role !== "admin"){ alert("Access denied: Admins only"); window.location.href="index.html" }
-
-// Initialize users storage if empty
+// If localStorage has no users, create default admin
 if(!localStorage.getItem("users")){
     let users = [
         {email:"admin@email.com",password:"portal123",role:"admin",repCodes:[],split:0}
@@ -80,7 +75,7 @@ if(!localStorage.getItem("users")){
     localStorage.setItem("users", JSON.stringify(users))
 }
 
-// Load users into table
+// Load users table
 function loadUsers(){
     let users = JSON.parse(localStorage.getItem("users")) || []
     let tbody = document.querySelector("#usersTable tbody")
@@ -103,7 +98,7 @@ function loadUsers(){
     })
 }
 
-// Add / Update user
+// Add or update a user
 function addOrUpdateUser(){
     let email = document.getElementById("newEmail").value.trim().toLowerCase()
     let password = document.getElementById("newPassword").value
@@ -116,13 +111,11 @@ function addOrUpdateUser(){
     let users = JSON.parse(localStorage.getItem("users")) || []
     let existing = users.find(u=>u.email===email)
     if(existing){
-        // Update existing
         existing.password = password
         existing.role = role
         existing.repCodes = repCodes
         existing.split = split
     } else {
-        // Add new
         users.push({email,password,role,repCodes,split})
     }
     localStorage.setItem("users", JSON.stringify(users))
@@ -134,7 +127,7 @@ function addOrUpdateUser(){
     document.getElementById("newSplit").value=""
 }
 
-// Edit inline
+// Edit user inline
 function editUser(index, field, value){
     let users = JSON.parse(localStorage.getItem("users")) || []
     if(field==='repCodes') value = value.split(",").map(s=>s.trim()).filter(s=>s)
@@ -152,10 +145,10 @@ function deleteUser(index){
     loadUsers()
 }
 
-// Attach event listener
+// Attach button event
 document.getElementById("addUserBtn").addEventListener("click", addOrUpdateUser)
 
-// Load existing users
+// Initial load
 loadUsers()
 </script>
 
