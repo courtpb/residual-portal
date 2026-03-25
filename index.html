@@ -1,49 +1,36 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Residual Portal Login</title>
-<style>
-body{font-family:Arial;background:#f4f6f9;margin:0;}
-.container{padding:50px;max-width:400px;margin:auto;background:white;margin-top:100px;border-radius:8px;box-shadow:0 0 10px rgba(0,0,0,0.1);}
-input{width:100%;padding:10px;margin:10px 0;border:1px solid #ccc;border-radius:4px;}
-button{width:100%;padding:10px;background:#3498db;color:white;border:none;border-radius:4px;cursor:pointer;}
-button:hover{background:#2980b9;}
-</style>
-</head>
-<body>
-<div class="container">
-<h2>Login</h2>
-<input type="email" id="email" placeholder="Email">
-<input type="password" id="password" placeholder="Password">
-<button onclick="login()">Login</button>
-<p id="error" style="color:red;"></p>
-</div>
-
 <script>
-// Initialize users if none exist
-if(!localStorage.getItem("users")){
-    let users = [
-        {email:"admin@email.com",password:"portal123",role:"admin",repCodes:[]},
-        {email:"rep1@email.com",password:"rep1pass",role:"rep",repCodes:["08040-004","08040-005","08040-006"]}
-    ]
-    localStorage.setItem("users", JSON.stringify(users))
-}
+document.addEventListener("DOMContentLoaded", function(){
 
-function login(){
-    let email = document.getElementById("email").value.trim().toLowerCase()
-    let password = document.getElementById("password").value
-    let users = JSON.parse(localStorage.getItem("users")) || []
-
-    let user = users.find(u => u.email.toLowerCase() === email && u.password === password)
-    if(user){
-        localStorage.setItem("loggedInUser", JSON.stringify(user))
-        window.location.href = "my-residuals.html"
-    } else {
-        document.getElementById("error").innerText = "Invalid login"
+    // Create default admin if none exists
+    if(!localStorage.getItem("users")){
+        localStorage.setItem("users", JSON.stringify([
+            {
+                email: "admin@email.com",
+                password: "admin123",
+                role: "admin",
+                repCodes: [],
+                split: 0
+            }
+        ]))
     }
-}
+
+    document.getElementById("loginBtn").addEventListener("click", function(){
+
+        let email = document.getElementById("email").value.trim().toLowerCase()
+        let password = document.getElementById("password").value
+
+        let users = JSON.parse(localStorage.getItem("users")) || []
+
+        let found = users.find(u => u.email === email && u.password === password)
+
+        if(found){
+            localStorage.setItem("loggedInUser", JSON.stringify(found))
+            window.location.href = "dashboard.html"
+        } else {
+            alert("Invalid login")
+        }
+
+    })
+
+})
 </script>
-</body>
-</html>
