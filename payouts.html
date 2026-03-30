@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <title>Payouts Dashboard</title>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <style>
     body { font-family: Arial; background:#f4f6f9; margin:0; }
     header { background:#2c3e50; color:white; padding:15px; }
@@ -11,7 +10,11 @@
     nav a { color:white; margin-right:15px; text-decoration:none; font-weight:bold; }
     .container { padding:25px; }
 
-    select, button { padding:10px; margin-right:10px; margin-bottom:20px; }
+    select, button {
+      padding:10px;
+      margin-right:10px;
+      margin-bottom:20px;
+    }
 
     table {
       width:100%;
@@ -22,34 +25,17 @@
     th, td {
       padding:10px;
       border:1px solid #ddd;
-      vertical-align: top;
     }
 
-    th { background:#2c3e50; color:white; }
-
-    input.additional {
-      width:120px;
-      padding:5px;
-      margin-bottom:5px;
-      display:block;
-    }
-
-    .additional-row {
-      display:flex;
-      gap:5px;
-      margin-bottom:5px;
+    th {
+      background:#2c3e50;
+      color:white;
     }
 
     #grandTotal {
       margin-top:20px;
       font-weight:bold;
       font-size:1.1em;
-    }
-
-    button.addAdditional {
-      margin-top:5px;
-      padding:5px 10px;
-      font-size:0.9em;
     }
   </style>
 </head>
@@ -75,7 +61,6 @@
 <label>Select Month:</label>
 <select id="monthSelect"></select>
 <button onclick="runReport()">Run Report</button>
-<button onclick="exportReport()">Export to Excel</button>
 
 <table>
   <thead>
@@ -84,9 +69,6 @@
       <th>Total Residual</th>
       <th>Split</th>
       <th>Payout</th>
-      <th>Additional</th>
-      <th>Additional Amount</th>
-      <th>Actions</th>
     </tr>
   </thead>
   <tbody id="results"></tbody>
@@ -109,14 +91,7 @@ const reps = [
   { name: "Shawn Grieve", codes: ["08040-011"], split: 0.60 }
 ];
 
-const BONUS_KEY = "payoutBonuses";
-
-// 🔹 SANITIZE REP NAME FOR HTML IDs
-function sanitize(str){
-  return str.replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_]/g,"");
-}
-
-// 🔹 GET ALL MERCHANT DATA
+// 🔥 GET ALL MERCHANT DATA FROM STORAGE
 function getAllMerchants(){
   let batches = JSON.parse(localStorage.getItem("residualBatches")) || [];
   let all = [];
@@ -132,16 +107,10 @@ function getAllMerchants(){
   return all;
 }
 
-// 🔹 POPULATE MONTH DROPDOWN MOST RECENT FIRST
+// 🔹 Populate month dropdown
 function populateMonths(){
   let data = getAllMerchants();
   let months = [...new Set(data.map(d => d.month))];
-  months.sort((a,b)=>{
-    let [yA,mA] = a.split("/").map(Number);
-    let [yB,mB] = b.split("/").map(Number);
-    if(yB !== yA) return yB - yA;
-    return mB - mA;
-  });
   let monthSelect = document.getElementById("monthSelect");
   monthSelect.innerHTML = "";
   months.forEach(m=>{
@@ -152,47 +121,13 @@ function populateMonths(){
   });
 }
 
-// 🔹 LOAD BONUSES
-function loadBonus(repName, month){
-  let allBonus = JSON.parse(localStorage.getItem(BONUS_KEY)) || {};
-  return allBonus[month]?.[repName] || [];
-}
-
-// 🔹 SAVE BONUSES
-function saveBonus(repName, month){
-  let allBonus = JSON.parse(localStorage.getItem(BONUS_KEY)) || {};
-  if(!allBonus[month]) allBonus[month] = {};
-  let rows = document.querySelectorAll(`.additional-container-${sanitize(repName)} .additional-row`);
-  let newBonuses = [];
-  rows.forEach(row=>{
-    let name = row.querySelector(".additional-name").value;
-    let amount = parseFloat(row.querySelector(".additional-amount").value)||0;
-    if(name || amount) newBonuses.push({name, amount});
-  });
-  allBonus[month][repName] = newBonuses;
-  localStorage.setItem(BONUS_KEY, JSON.stringify(allBonus));
-  runReport();
-}
-
-// 🔹 ADD ADDITIONAL ROW
-function addAdditionalRow(repName){
-  let container = document.querySelector(`.additional-container-${sanitize(repName)}`);
-  let row = document.createElement("div");
-  row.className = "additional-row";
-  row.innerHTML = `
-    <input class="additional additional-name" type="text" placeholder="Additional">
-    <input class="additional additional-amount" type="number" min="0" value="0">
-  `;
-  container.appendChild(row);
-}
-
-// 🔥 RUN REPORT
+// 🔥 MAIN REPORT FUNCTION
 function runReport(){
   let data = getAllMerchants();
   let selectedMonth = document.getElementById("monthSelect").value;
-  if(!selectedMonth) return;
   let results = document.getElementById("results");
   let grandTotal = 0;
+
   results.innerHTML = "";
 
   reps.forEach(rep=>{
@@ -200,48 +135,23 @@ function runReport(){
       .filter(d => rep.codes.includes(d.repId) && d.month === selectedMonth)
       .reduce((sum,d)=>sum + d.residual, 0);
 
-    let bonuses = loadBonus(rep.name, selectedMonth);
-    let bonusSum = bonuses.reduce((s,b)=>s+b.amount,0);
-    let payout = total * rep.split + bonusSum;
-    grandTotal += payout;
+    if(total > 0){
+      let payout = total * rep.split;
+      grandTotal += payout;
 
-    let bonusContainerId = `additional-container-${sanitize(rep.name)}`;
-    results.innerHTML += `
-      <tr>
-        <td>${rep.name}</td>
-        <td>$${total.toFixed(2)}</td>
-        <td>${rep.split*100}%</td>
-        <td>$${payout.toFixed(2)}</td>
-        <td colspan="2"><div class="${bonusContainerId}"></div></td>
-        <td>
-          <button onclick="addAdditionalRow('${rep.name}')">Add</button>
-          <button onclick="saveBonus('${rep.name}','${selectedMonth}')">Save</button>
-        </td>
-      </tr>
-    `;
-
-    // Populate existing bonuses
-    let container = document.querySelector(`.${bonusContainerId}`);
-    bonuses.forEach(b=>{
-      let row = document.createElement("div");
-      row.className = "additional-row";
-      row.innerHTML = `
-        <input class="additional additional-name" type="text" value="${b.name}" placeholder="Additional">
-        <input class="additional additional-amount" type="number" min="0" value="${b.amount}">
+      results.innerHTML += `
+        <tr>
+          <td>${rep.name}</td>
+          <td>$${total.toFixed(2)}</td>
+          <td>${rep.split * 100}%</td>
+          <td>$${payout.toFixed(2)}</td>
+        </tr>
       `;
-      container.appendChild(row);
-    });
+    }
   });
 
   document.getElementById("grandTotal").innerHTML =
-    `Total Paid Out (including additionals): $${grandTotal.toFixed(2)}`;
-}
-
-// 🔹 EXPORT TO EXCEL
-function exportReport(){
-  let table = document.querySelector("table");
-  let wb = XLSX.utils.table_to_book(table, { sheet:"Payouts" });
-  XLSX.writeFile(wb, "Payout_Report.xlsx");
+    `Total Paid Out: $${grandTotal.toFixed(2)}`;
 }
 
 // Initialize month dropdown
