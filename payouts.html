@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Payouts Dashboard</title>
+  <style>
+    body {
+      font-family: Arial;
+      padding: 20px;
+      background: #f4f6f8;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+    }
+
+    select, button {
+      padding: 10px;
+      margin-right: 10px;
+      margin-bottom: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+    }
+
+    th, td {
+      padding: 10px;
+      border: 1px solid #ddd;
+    }
+
+    th {
+      background: #222;
+      color: white;
+    }
+
+    .card {
+      background: white;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>Payouts Dashboard</h1>
+
+<div class="card">
+  <label>View Mode:</label>
+  <select id="viewMode">
+    <option value="month">By Month (All Reps)</option>
+    <option value="rep">By Rep (All Months)</option>
+  </select>
+
+  <select id="monthSelect"></select>
+  <select id="repSelect"></select>
+
+  <button onclick="runReport()">Run Report</button>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Agent</th>
+      <th>Total Residual</th>
+      <th>Split</th>
+      <th>Payout</th>
+    </tr>
+  </thead>
+  <tbody id="results"></tbody>
+</table>
+
+<script>
+// 🔥 YOUR REP CONFIG (DONE FOR YOU)
+const reps = [
+  { name: "Bryan Pelto", codes: ["08040-004","08216-004","08636-003","08630-004"], split: 0.15 },
+  { name: "Pat Pascua", codes: ["08040-003","08216-003","08636-002","08630-003"], split: 0.15 },
+  { name: "Che Pascua", codes: ["08040-007","08216-007","08636-004","08630-007"], split: 0.15 },
+  { name: "Mike Lature", codes: ["08040-009","08630-009"], split: 0.65 },
+  { name: "Sal Nashal", codes: ["08040-008","08630-008"], split: 0.70 },
+  { name: "Scott Coleman", codes: ["08040-006","08630-006"], split: 0.70 },
+  { name: "Walter Noriega", codes: ["08040-010"], split: 0.70 },
+  { name: "Shawn Grieve", codes: ["08040-011"], split: 0.60 }
+];
+
+// 🔥 THIS WILL COME FROM YOUR EXISTING PAGE
+// You MUST expose your merchant data globally like:
+// window.merchantData = [...]
+
+let merchantData = window.merchantData || [];
+
+// 🔹 Populate dropdowns
+const repSelect = document.getElementById("repSelect");
+reps.forEach((rep, i) => {
+  const opt = document.createElement("option");
+  opt.value = i;
+  opt.textContent = rep.name;
+  repSelect.appendChild(opt);
+});
+
+// 🔹 Get unique months
+function getMonths() {
+  const months = [...new Set(merchantData.map(m => m.month))];
+  const monthSelect = document.getElementById("monthSelect");
+  monthSelect.innerHTML = "";
+
+  months.forEach(m => {
+    const opt = document.createElement("option");
+    opt.value = m;
+    opt.textContent = m;
+    monthSelect.appendChild(opt);
+  });
+}
+
+// 🔥 MAIN LOGIC
+function runReport() {
+  const mode = document.getElementById("viewMode").value;
+  const results = document.getElementById("results");
+  results.innerHTML = "";
+
+  if (mode === "month") {
+    const month = document.getElementById("monthSelect").value;
+
+    reps.forEach(rep => {
+      const total = merchantData
+        .filter(m => rep.codes.includes(m.repCode) && m.month === month)
+        .reduce((sum, m) => sum + Number(m.residual), 0);
+
+      const payout = total * rep.split;
+
+      if (total > 0) {
+        results.innerHTML += `
+          <tr>
+            <td>${rep.name}</td>
+            <td>$${total.toFixed(2)}</td>
+            <td>${rep.split * 100}%</td>
+            <td>$${payout.toFixed(2)}</td>
+          </tr>
+        `;
+      }
+    });
+
+  } else {
+    const rep = reps[repSelect.value];
+
+    const grouped = {};
+
+    merchantData.forEach(m => {
+      if (rep.codes.includes(m.repCode)) {
+        if (!grouped[m.month]) grouped[m.month] = 0;
+        grouped[m.month] += Number(m.residual);
+      }
+    });
+
+    Object.keys(grouped).forEach(month => {
+      const total = grouped[month];
+      const payout = total * rep.split;
+
+      results.innerHTML += `
+        <tr>
+          <td>${rep.name} (${month})</td>
+          <td>$${total.toFixed(2)}</td>
+          <td>${rep.split * 100}%</td>
+          <td>$${payout.toFixed(2)}</td>
+        </tr>
+      `;
+    });
+  }
+}
+
+// 🔥 RUN AFTER DATA LOADS
+setTimeout(getMonths, 500);
+</script>
+
+</body>
+</html>
