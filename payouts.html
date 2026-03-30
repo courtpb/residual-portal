@@ -3,64 +3,60 @@
 <head>
   <title>Payouts Dashboard</title>
   <style>
-    body {
-      font-family: Arial;
-      padding: 20px;
-      background: #f4f6f8;
-    }
-
-    h1 {
-      margin-bottom: 20px;
-    }
+    body { font-family: Arial; background:#f4f6f9; margin:0; }
+    header { background:#2c3e50; color:white; padding:15px; }
+    nav { background:#34495e; padding:10px; }
+    nav a { color:white; margin-right:15px; text-decoration:none; font-weight:bold; }
+    .container { padding:25px; }
 
     select, button {
-      padding: 10px;
-      margin-right: 10px;
-      margin-bottom: 20px;
+      padding:10px;
+      margin-right:10px;
+      margin-bottom:20px;
     }
 
     table {
-      width: 100%;
-      border-collapse: collapse;
-      background: white;
+      width:100%;
+      border-collapse:collapse;
+      background:white;
     }
 
     th, td {
-      padding: 10px;
-      border: 1px solid #ddd;
+      padding:10px;
+      border:1px solid #ddd;
     }
 
     th {
-      background: #222;
-      color: white;
-    }
-
-    .card {
-      background: white;
-      padding: 15px;
-      margin-bottom: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      background:#2c3e50;
+      color:white;
     }
   </style>
 </head>
 
 <body>
 
-<h1>Payouts Dashboard</h1>
+<header>
+<h2>Payouts Dashboard</h2>
+</header>
 
-<div class="card">
-  <label>View Mode:</label>
-  <select id="viewMode">
-    <option value="month">By Month (All Reps)</option>
-    <option value="rep">By Rep (All Months)</option>
-  </select>
+<nav>
+<a href="dashboard.html">Dashboard</a>
+<a href="residuals.html">Import Residuals</a>
+<a href="merchant-search.html">Merchant Search</a>
+<a href="payouts.html">Payouts</a>
+</nav>
 
-  <select id="monthSelect"></select>
-  <select id="repSelect"></select>
+<div class="container">
 
-  <button onclick="runReport()">Run Report</button>
-</div>
+<select id="viewMode">
+  <option value="month">By Month (All Reps)</option>
+  <option value="rep">By Rep (All Months)</option>
+</select>
+
+<select id="monthSelect"></select>
+<select id="repSelect"></select>
+
+<button onclick="runReport()">Run Report</button>
 
 <table>
   <thead>
@@ -74,8 +70,10 @@
   <tbody id="results"></tbody>
 </table>
 
+</div>
+
 <script>
-// 🔥 YOUR REP CONFIG (DONE FOR YOU)
+// 🔥 REP CONFIG (YOUR DATA)
 const reps = [
   { name: "Bryan Pelto", codes: ["08040-004","08216-004","08636-003","08630-004"], split: 0.15 },
   { name: "Pat Pascua", codes: ["08040-003","08216-003","08636-002","08630-003"], split: 0.15 },
@@ -87,57 +85,71 @@ const reps = [
   { name: "Shawn Grieve", codes: ["08040-011"], split: 0.60 }
 ];
 
-// 🔥 THIS WILL COME FROM YOUR EXISTING PAGE
-// You MUST expose your merchant data globally like:
-// window.merchantData = [...]
+// 🔥 GET ALL MERCHANT DATA FROM STORAGE
+function getAllMerchants(){
+  let batches = JSON.parse(localStorage.getItem("residualBatches")) || [];
+  let all = [];
 
-let merchantData = window.merchantData || [];
+  batches.forEach(batch => {
+    batch.merchants.forEach(m => {
+      all.push({
+        repId: m.repId,
+        residual: Number(m.total),
+        month: m.monthYear
+      });
+    });
+  });
+
+  return all;
+}
 
 // 🔹 Populate dropdowns
-const repSelect = document.getElementById("repSelect");
-reps.forEach((rep, i) => {
-  const opt = document.createElement("option");
-  opt.value = i;
-  opt.textContent = rep.name;
-  repSelect.appendChild(opt);
-});
+function populateFilters(){
+  let data = getAllMerchants();
 
-// 🔹 Get unique months
-function getMonths() {
-  const months = [...new Set(merchantData.map(m => m.month))];
-  const monthSelect = document.getElementById("monthSelect");
+  let months = [...new Set(data.map(d => d.month))];
+  let monthSelect = document.getElementById("monthSelect");
   monthSelect.innerHTML = "";
-
-  months.forEach(m => {
-    const opt = document.createElement("option");
+  months.forEach(m=>{
+    let opt = document.createElement("option");
     opt.value = m;
     opt.textContent = m;
     monthSelect.appendChild(opt);
   });
+
+  let repSelect = document.getElementById("repSelect");
+  repSelect.innerHTML = "";
+  reps.forEach((r,i)=>{
+    let opt = document.createElement("option");
+    opt.value = i;
+    opt.textContent = r.name;
+    repSelect.appendChild(opt);
+  });
 }
 
-// 🔥 MAIN LOGIC
-function runReport() {
-  const mode = document.getElementById("viewMode").value;
-  const results = document.getElementById("results");
+// 🔥 MAIN REPORT
+function runReport(){
+  let data = getAllMerchants();
+  let mode = document.getElementById("viewMode").value;
+  let results = document.getElementById("results");
   results.innerHTML = "";
 
-  if (mode === "month") {
-    const month = document.getElementById("monthSelect").value;
+  if(mode === "month"){
+    let selectedMonth = document.getElementById("monthSelect").value;
 
-    reps.forEach(rep => {
-      const total = merchantData
-        .filter(m => rep.codes.includes(m.repCode) && m.month === month)
-        .reduce((sum, m) => sum + Number(m.residual), 0);
+    reps.forEach(rep=>{
+      let total = data
+        .filter(d => rep.codes.includes(d.repId) && d.month === selectedMonth)
+        .reduce((sum,d)=>sum + d.residual, 0);
 
-      const payout = total * rep.split;
+      if(total > 0){
+        let payout = total * rep.split;
 
-      if (total > 0) {
         results.innerHTML += `
           <tr>
             <td>${rep.name}</td>
             <td>$${total.toFixed(2)}</td>
-            <td>${rep.split * 100}%</td>
+            <td>${rep.split*100}%</td>
             <td>$${payout.toFixed(2)}</td>
           </tr>
         `;
@@ -145,26 +157,26 @@ function runReport() {
     });
 
   } else {
-    const rep = reps[repSelect.value];
+    let rep = reps[document.getElementById("repSelect").value];
 
-    const grouped = {};
+    let grouped = {};
 
-    merchantData.forEach(m => {
-      if (rep.codes.includes(m.repCode)) {
-        if (!grouped[m.month]) grouped[m.month] = 0;
-        grouped[m.month] += Number(m.residual);
+    data.forEach(d=>{
+      if(rep.codes.includes(d.repId)){
+        if(!grouped[d.month]) grouped[d.month]=0;
+        grouped[d.month]+=d.residual;
       }
     });
 
-    Object.keys(grouped).forEach(month => {
-      const total = grouped[month];
-      const payout = total * rep.split;
+    Object.keys(grouped).forEach(month=>{
+      let total = grouped[month];
+      let payout = total * rep.split;
 
       results.innerHTML += `
         <tr>
           <td>${rep.name} (${month})</td>
           <td>$${total.toFixed(2)}</td>
-          <td>${rep.split * 100}%</td>
+          <td>${rep.split*100}%</td>
           <td>$${payout.toFixed(2)}</td>
         </tr>
       `;
@@ -172,8 +184,8 @@ function runReport() {
   }
 }
 
-// 🔥 RUN AFTER DATA LOADS
-setTimeout(getMonths, 500);
+// INIT
+populateFilters();
 </script>
 
 </body>
