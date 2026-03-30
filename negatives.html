@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Negative Residuals</title>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <style>
+    body { font-family: Arial; background:#f4f6f9; margin:0; }
+    header { background:#2c3e50; color:white; padding:15px; }
+    nav { background:#34495e; padding:10px; }
+    nav a { color:white; margin-right:15px; text-decoration:none; font-weight:bold; }
+    .container { padding:25px; }
+
+    select, button { padding:10px; margin-right:10px; margin-bottom:20px; }
+
+    table {
+      width:100%;
+      border-collapse:collapse;
+      background:white;
+    }
+
+    th, td {
+      padding:10px;
+      border:1px solid #ddd;
+      text-align:left;
+    }
+
+    th { background:#2c3e50; color:white; }
+  </style>
+</head>
+
+<body>
+
+<header>
+<h2>Negative Residuals</h2>
+</header>
+
+<nav>
+  <a href="dashboard.html">Dashboard</a>
+  <a href="residuals.html">Import Residuals</a>
+  <a href="my-residuals.html">My Residuals</a>
+  <a href="merchant-search.html">Merchant Search</a>
+  <a href="payouts.html">Payouts</a>
+  <a href="negatives.html">Negatives</a>
+  <a href="users.html">Users</a>
+  <a href="index.html">Logout</a>
+</nav>
+
+<div class="container">
+
+<label>Select Month:</label>
+<select id="monthSelect"></select>
+<button onclick="runReport()">Run Report</button>
+<button onclick="exportReport()">Export to Excel</button>
+
+<table>
+  <thead>
+    <tr>
+      <th>Merchant Number</th>
+      <th>DBA</th>
+      <th>Residual</th>
+    </tr>
+  </thead>
+  <tbody id="results"></tbody>
+</table>
+
+</div>
+
+<script>
+// 🔹 GET ALL MERCHANT DATA
+function getAllMerchants(){
+  let batches = JSON.parse(localStorage.getItem("residualBatches")) || [];
+  let all = [];
+  batches.forEach(batch => {
+    batch.merchants.forEach(m => {
+      all.push({
+        month: m.monthYear,
+        merchant: m.merchant,
+        dba: m.dba,
+        residual: Number(m.total)
+      });
+    });
+  });
+  return all;
+}
+
+// 🔹 POPULATE MONTH DROPDOWN MOST RECENT FIRST
+function populateMonths(){
+  let data = getAllMerchants();
+  let months = [...new Set(data.map(d => d.month))];
+  months.sort((a,b)=>{
+    let [yA,mA] = a.split("/").map(Number);
+    let [yB,mB] = b.split("/").map(Number);
+    if(yB !== yA) return yB - yA;
+    return mB - mA;
+  });
+  let monthSelect = document.getElementById("monthSelect");
+  monthSelect.innerHTML = "";
+  months.forEach(m=>{
+    let opt = document.createElement("option");
+    opt.value = m;
+    opt.textContent = m;
+    monthSelect.appendChild(opt);
+  });
+}
+
+// 🔹 RUN REPORT
+function runReport(){
+  let selectedMonth = document.getElementById("monthSelect").value;
+  if(!selectedMonth) return;
+
+  let data = getAllMerchants()
+    .filter(d => d.month === selectedMonth && d.residual < 0);
+
+  let results = document.getElementById("results");
+  results.innerHTML = "";
+
+  data.forEach(d=>{
+    let row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${d.merchant}</td>
+      <td>${d.dba}</td>
+      <td>$${d.residual.toFixed(2)}</td>
+    `;
+    results.appendChild(row);
+  });
+}
+
+// 🔹 EXPORT TO EXCEL
+function exportReport(){
+  let table = document.querySelector("table");
+  let wb = XLSX.utils.table_to_book(table, { sheet:"Negatives" });
+  XLSX.writeFile(wb, "Negative_Residuals.xlsx");
+}
+
+// Initialize
+populateMonths();
+</script>
+
+</body>
+</html>
