@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
   <title>Payouts Dashboard</title>
   <style>
     body { font-family: Arial; background:#f4f6f9; margin:0; }
@@ -30,6 +31,12 @@
       background:#2c3e50;
       color:white;
     }
+
+    #grandTotal {
+      margin-top:20px;
+      font-weight:bold;
+      font-size:1.1em;
+    }
   </style>
 </head>
 
@@ -40,22 +47,19 @@
 </header>
 
 <nav>
-<a href="dashboard.html">Dashboard</a>
-<a href="residuals.html">Import Residuals</a>
-<a href="merchant-search.html">Merchant Search</a>
-<a href="payouts.html">Payouts</a>
+  <a href="dashboard.html">Dashboard</a>
+  <a href="residuals.html">Import Residuals</a>
+  <a href="my-residuals.html">My Residuals</a>
+  <a href="merchant-search.html">Merchant Search</a>
+  <a href="payouts.html">Payouts</a>
+  <a href="users.html">Users</a>
+  <a href="index.html">Logout</a>
 </nav>
 
 <div class="container">
 
-<select id="viewMode">
-  <option value="month">By Month (All Reps)</option>
-  <option value="rep">By Rep (All Months)</option>
-</select>
-
+<label>Select Month:</label>
 <select id="monthSelect"></select>
-<select id="repSelect"></select>
-
 <button onclick="runReport()">Run Report</button>
 
 <table>
@@ -69,6 +73,8 @@
   </thead>
   <tbody id="results"></tbody>
 </table>
+
+<div id="grandTotal"></div>
 
 </div>
 
@@ -89,7 +95,6 @@ const reps = [
 function getAllMerchants(){
   let batches = JSON.parse(localStorage.getItem("residualBatches")) || [];
   let all = [];
-
   batches.forEach(batch => {
     batch.merchants.forEach(m => {
       all.push({
@@ -99,14 +104,12 @@ function getAllMerchants(){
       });
     });
   });
-
   return all;
 }
 
-// 🔹 Populate dropdowns
-function populateFilters(){
+// 🔹 Populate month dropdown
+function populateMonths(){
   let data = getAllMerchants();
-
   let months = [...new Set(data.map(d => d.month))];
   let monthSelect = document.getElementById("monthSelect");
   monthSelect.innerHTML = "";
@@ -116,76 +119,43 @@ function populateFilters(){
     opt.textContent = m;
     monthSelect.appendChild(opt);
   });
-
-  let repSelect = document.getElementById("repSelect");
-  repSelect.innerHTML = "";
-  reps.forEach((r,i)=>{
-    let opt = document.createElement("option");
-    opt.value = i;
-    opt.textContent = r.name;
-    repSelect.appendChild(opt);
-  });
 }
 
-// 🔥 MAIN REPORT
+// 🔥 MAIN REPORT FUNCTION
 function runReport(){
   let data = getAllMerchants();
-  let mode = document.getElementById("viewMode").value;
+  let selectedMonth = document.getElementById("monthSelect").value;
   let results = document.getElementById("results");
+  let grandTotal = 0;
+
   results.innerHTML = "";
 
-  if(mode === "month"){
-    let selectedMonth = document.getElementById("monthSelect").value;
+  reps.forEach(rep=>{
+    let total = data
+      .filter(d => rep.codes.includes(d.repId) && d.month === selectedMonth)
+      .reduce((sum,d)=>sum + d.residual, 0);
 
-    reps.forEach(rep=>{
-      let total = data
-        .filter(d => rep.codes.includes(d.repId) && d.month === selectedMonth)
-        .reduce((sum,d)=>sum + d.residual, 0);
-
-      if(total > 0){
-        let payout = total * rep.split;
-
-        results.innerHTML += `
-          <tr>
-            <td>${rep.name}</td>
-            <td>$${total.toFixed(2)}</td>
-            <td>${rep.split*100}%</td>
-            <td>$${payout.toFixed(2)}</td>
-          </tr>
-        `;
-      }
-    });
-
-  } else {
-    let rep = reps[document.getElementById("repSelect").value];
-
-    let grouped = {};
-
-    data.forEach(d=>{
-      if(rep.codes.includes(d.repId)){
-        if(!grouped[d.month]) grouped[d.month]=0;
-        grouped[d.month]+=d.residual;
-      }
-    });
-
-    Object.keys(grouped).forEach(month=>{
-      let total = grouped[month];
+    if(total > 0){
       let payout = total * rep.split;
+      grandTotal += payout;
 
       results.innerHTML += `
         <tr>
-          <td>${rep.name} (${month})</td>
+          <td>${rep.name}</td>
           <td>$${total.toFixed(2)}</td>
-          <td>${rep.split*100}%</td>
+          <td>${rep.split * 100}%</td>
           <td>$${payout.toFixed(2)}</td>
         </tr>
       `;
-    });
-  }
+    }
+  });
+
+  document.getElementById("grandTotal").innerHTML =
+    `Total Paid Out: $${grandTotal.toFixed(2)}`;
 }
 
-// INIT
-populateFilters();
+// Initialize month dropdown
+populateMonths();
 </script>
 
 </body>
