@@ -26,6 +26,12 @@
     }
 
     th { background:#2c3e50; color:white; }
+
+    #totalNegative {
+      font-weight:bold;
+      font-size:1.2em;
+      margin-bottom:10px;
+    }
   </style>
 </head>
 
@@ -52,6 +58,8 @@
 <select id="monthSelect"></select>
 <button onclick="runReport()">Run Report</button>
 <button onclick="exportReport()">Export to Excel</button>
+
+<div id="totalNegative">Total Negative Residuals: $0.00</div>
 
 <table>
   <thead>
@@ -134,6 +142,11 @@ function runReport(){
 
   let results = document.getElementById("results");
   results.innerHTML = "";
+
+  // 🔹 Calculate total negative
+  let totalNegative = data.reduce((sum, d) => sum + d.residual, 0);
+  document.getElementById("totalNegative").innerText = 
+      `Total Negative Residuals: $${totalNegative.toFixed(2)}`;
 
   data.forEach(d=>{
     let row = document.createElement("tr");
