@@ -59,6 +59,7 @@
       <th>Merchant Number</th>
       <th>DBA</th>
       <th>Residual</th>
+      <th>Rep Name</th>
     </tr>
   </thead>
   <tbody id="results"></tbody>
@@ -67,6 +68,18 @@
 </div>
 
 <script>
+// 🔹 REP CONFIG
+const reps = [
+  { name: "Bryan Pelto", codes: ["08040-004","08216-004","08636-003","08630-004"] },
+  { name: "Pat Pascua", codes: ["08040-003","08216-003","08636-002","08630-003"] },
+  { name: "Che Pascua", codes: ["08040-007","08216-007","08636-004","08630-007"] },
+  { name: "Mike Lature", codes: ["08040-009","08630-009"] },
+  { name: "Sal Nashal", codes: ["08040-008","08630-008"] },
+  { name: "Scott Coleman", codes: ["08040-006","08630-006"] },
+  { name: "Walter Noriega", codes: ["08040-010"] },
+  { name: "Shawn Grieve", codes: ["08040-011"] }
+];
+
 // 🔹 GET ALL MERCHANT DATA
 function getAllMerchants(){
   let batches = JSON.parse(localStorage.getItem("residualBatches")) || [];
@@ -77,11 +90,18 @@ function getAllMerchants(){
         month: m.monthYear,
         merchant: m.merchant,
         dba: m.dba,
-        residual: Number(m.total)
+        residual: Number(m.total),
+        repId: m.repId
       });
     });
   });
   return all;
+}
+
+// 🔹 FIND REP NAME BY CODE
+function findRepByCode(code){
+  let rep = reps.find(r => r.codes.includes(code));
+  return rep ? rep.name : "Unknown";
 }
 
 // 🔹 POPULATE MONTH DROPDOWN MOST RECENT FIRST
@@ -121,6 +141,7 @@ function runReport(){
       <td>${d.merchant}</td>
       <td>${d.dba}</td>
       <td>$${d.residual.toFixed(2)}</td>
+      <td>${findRepByCode(d.repId)}</td>
     `;
     results.appendChild(row);
   });
