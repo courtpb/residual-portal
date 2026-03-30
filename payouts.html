@@ -22,19 +22,34 @@
     th, td {
       padding:10px;
       border:1px solid #ddd;
+      vertical-align: top;
     }
 
     th { background:#2c3e50; color:white; }
 
-    input.bonus {
+    input.additional {
       width:120px;
       padding:5px;
+      margin-bottom:5px;
+      display:block;
+    }
+
+    .additional-row {
+      display:flex;
+      gap:5px;
+      margin-bottom:5px;
     }
 
     #grandTotal {
       margin-top:20px;
       font-weight:bold;
       font-size:1.1em;
+    }
+
+    button.addAdditional {
+      margin-top:5px;
+      padding:5px 10px;
+      font-size:0.9em;
     }
   </style>
 </head>
@@ -69,8 +84,9 @@
       <th>Total Residual</th>
       <th>Split</th>
       <th>Payout</th>
-      <th>Bonus Name</th>
-      <th>Bonus Amount</th>
+      <th>Additional</th>
+      <th>Additional Amount</th>
+      <th>Actions</th>
     </tr>
   </thead>
   <tbody id="results"></tbody>
@@ -93,7 +109,7 @@ const reps = [
   { name: "Shawn Grieve", codes: ["08040-011"], split: 0.60 }
 ];
 
-// 🔥 BONUS STORAGE KEY
+// 🔥 ADDITIONAL STORAGE KEY
 const BONUS_KEY = "payoutBonuses";
 
 // 🔥 GET ALL MERCHANT DATA FROM STORAGE
@@ -112,10 +128,16 @@ function getAllMerchants(){
   return all;
 }
 
-// 🔹 POPULATE MONTH DROPDOWN
+// 🔹 POPULATE MONTH DROPDOWN MOST RECENT FIRST
 function populateMonths(){
   let data = getAllMerchants();
   let months = [...new Set(data.map(d => d.month))];
+  months.sort((a,b)=>{
+    let [yA,mA] = a.split("/").map(Number);
+    let [yB,mB] = b.split("/").map(Number);
+    return new Date(yB,mB-1) - new Date(yA,mA-1);
+  });
+
   let monthSelect = document.getElementById("monthSelect");
   monthSelect.innerHTML = "";
   months.forEach(m=>{
@@ -129,16 +151,35 @@ function populateMonths(){
 // 🔹 LOAD BONUS DATA
 function loadBonus(repName, month){
   let allBonus = JSON.parse(localStorage.getItem(BONUS_KEY)) || {};
-  return allBonus[month]?.[repName] || { name: "", amount: 0 };
+  return allBonus[month]?.[repName] || [];
 }
 
 // 🔹 SAVE BONUS DATA
-function saveBonus(repName, month, bonusName, bonusAmount){
+function saveBonus(repName, month){
   let allBonus = JSON.parse(localStorage.getItem(BONUS_KEY)) || {};
   if(!allBonus[month]) allBonus[month] = {};
-  allBonus[month][repName] = { name: bonusName, amount: parseFloat(bonusAmount)||0 };
+  let rows = document.querySelectorAll(`.additional-container-${repName} .additional-row`);
+  let newBonuses = [];
+  rows.forEach(row=>{
+    let name = row.querySelector(".additional-name").value;
+    let amount = parseFloat(row.querySelector(".additional-amount").value)||0;
+    if(name || amount) newBonuses.push({name, amount});
+  });
+  allBonus[month][repName] = newBonuses;
   localStorage.setItem(BONUS_KEY, JSON.stringify(allBonus));
   runReport(); // recalc totals
+}
+
+// 🔹 ADD NEW ADDITIONAL ROW
+function addAdditionalRow(repName){
+  let container = document.querySelector(`.additional-container-${repName}`);
+  let row = document.createElement("div");
+  row.className = "additional-row";
+  row.innerHTML = `
+    <input class="additional additional-name" type="text" placeholder="Additional">
+    <input class="additional additional-amount" type="number" min="0" value="0">
+  `;
+  container.appendChild(row);
 }
 
 // 🔥 MAIN REPORT
@@ -154,25 +195,44 @@ function runReport(){
       .filter(d => rep.codes.includes(d.repId) && d.month === selectedMonth)
       .reduce((sum,d)=>sum + d.residual, 0);
 
-    let bonusData = loadBonus(rep.name, selectedMonth);
-    let payout = total * rep.split + (bonusData.amount || 0);
+    let bonuses = loadBonus(rep.name, selectedMonth);
+    let bonusSum = bonuses.reduce((s,b)=>s+b.amount,0);
+    let payout = total * rep.split + bonusSum;
     grandTotal += payout;
 
+    // Generate HTML for additional bonuses
+    let bonusContainerId = `additional-container-${rep.name}`;
+    let bonusHTML = `<div class="additional-container-${rep.name}"></div>`;
+    
     results.innerHTML += `
       <tr>
         <td>${rep.name}</td>
         <td>$${total.toFixed(2)}</td>
         <td>${rep.split*100}%</td>
         <td>$${payout.toFixed(2)}</td>
-        <td><input class="bonus" type="text" id="bonusName-${rep.name}" value="${bonusData.name}"></td>
-        <td><input class="bonus" type="number" id="bonusAmount-${rep.name}" value="${bonusData.amount}" min="0"></td>
-        <td><button onclick="saveBonus('${rep.name}','${selectedMonth}',document.getElementById('bonusName-${rep.name}').value,document.getElementById('bonusAmount-${rep.name}').value)">Save</button></td>
+        <td colspan="2">${bonusHTML}</td>
+        <td>
+          <button onclick="addAdditionalRow('${rep.name}')">Add</button>
+          <button onclick="saveBonus('${rep.name}','${selectedMonth}')">Save</button>
+        </td>
       </tr>
     `;
+
+    // Populate existing bonuses
+    let container = document.querySelector(`.additional-container-${rep.name}`);
+    bonuses.forEach(b=>{
+      let row = document.createElement("div");
+      row.className = "additional-row";
+      row.innerHTML = `
+        <input class="additional additional-name" type="text" value="${b.name}" placeholder="Additional">
+        <input class="additional additional-amount" type="number" min="0" value="${b.amount}">
+      `;
+      container.appendChild(row);
+    });
   });
 
   document.getElementById("grandTotal").innerHTML =
-    `Total Paid Out (including bonuses): $${grandTotal.toFixed(2)}`;
+    `Total Paid Out (including additionals): $${grandTotal.toFixed(2)}`;
 }
 
 // 🔹 EXPORT TO EXCEL
