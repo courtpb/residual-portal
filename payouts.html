@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Payouts Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <style>
     body { font-family: Arial; background:#f4f6f9; margin:0; }
     header { background:#2c3e50; color:white; padding:15px; }
@@ -10,11 +11,7 @@
     nav a { color:white; margin-right:15px; text-decoration:none; font-weight:bold; }
     .container { padding:25px; }
 
-    select, button {
-      padding:10px;
-      margin-right:10px;
-      margin-bottom:20px;
-    }
+    select, button { padding:10px; margin-right:10px; margin-bottom:20px; }
 
     table {
       width:100%;
@@ -27,9 +24,11 @@
       border:1px solid #ddd;
     }
 
-    th {
-      background:#2c3e50;
-      color:white;
+    th { background:#2c3e50; color:white; }
+
+    input.bonus {
+      width:120px;
+      padding:5px;
     }
 
     #grandTotal {
@@ -61,6 +60,7 @@
 <label>Select Month:</label>
 <select id="monthSelect"></select>
 <button onclick="runReport()">Run Report</button>
+<button onclick="exportReport()">Export to Excel</button>
 
 <table>
   <thead>
@@ -69,6 +69,8 @@
       <th>Total Residual</th>
       <th>Split</th>
       <th>Payout</th>
+      <th>Bonus Name</th>
+      <th>Bonus Amount</th>
     </tr>
   </thead>
   <tbody id="results"></tbody>
@@ -91,6 +93,9 @@ const reps = [
   { name: "Shawn Grieve", codes: ["08040-011"], split: 0.60 }
 ];
 
+// 🔥 BONUS STORAGE KEY
+const BONUS_KEY = "payoutBonuses";
+
 // 🔥 GET ALL MERCHANT DATA FROM STORAGE
 function getAllMerchants(){
   let batches = JSON.parse(localStorage.getItem("residualBatches")) || [];
@@ -107,7 +112,7 @@ function getAllMerchants(){
   return all;
 }
 
-// 🔹 Populate month dropdown
+// 🔹 POPULATE MONTH DROPDOWN
 function populateMonths(){
   let data = getAllMerchants();
   let months = [...new Set(data.map(d => d.month))];
@@ -121,13 +126,27 @@ function populateMonths(){
   });
 }
 
-// 🔥 MAIN REPORT FUNCTION
+// 🔹 LOAD BONUS DATA
+function loadBonus(repName, month){
+  let allBonus = JSON.parse(localStorage.getItem(BONUS_KEY)) || {};
+  return allBonus[month]?.[repName] || { name: "", amount: 0 };
+}
+
+// 🔹 SAVE BONUS DATA
+function saveBonus(repName, month, bonusName, bonusAmount){
+  let allBonus = JSON.parse(localStorage.getItem(BONUS_KEY)) || {};
+  if(!allBonus[month]) allBonus[month] = {};
+  allBonus[month][repName] = { name: bonusName, amount: parseFloat(bonusAmount)||0 };
+  localStorage.setItem(BONUS_KEY, JSON.stringify(allBonus));
+  runReport(); // recalc totals
+}
+
+// 🔥 MAIN REPORT
 function runReport(){
   let data = getAllMerchants();
   let selectedMonth = document.getElementById("monthSelect").value;
   let results = document.getElementById("results");
   let grandTotal = 0;
-
   results.innerHTML = "";
 
   reps.forEach(rep=>{
@@ -135,23 +154,32 @@ function runReport(){
       .filter(d => rep.codes.includes(d.repId) && d.month === selectedMonth)
       .reduce((sum,d)=>sum + d.residual, 0);
 
-    if(total > 0){
-      let payout = total * rep.split;
-      grandTotal += payout;
+    let bonusData = loadBonus(rep.name, selectedMonth);
+    let payout = total * rep.split + (bonusData.amount || 0);
+    grandTotal += payout;
 
-      results.innerHTML += `
-        <tr>
-          <td>${rep.name}</td>
-          <td>$${total.toFixed(2)}</td>
-          <td>${rep.split * 100}%</td>
-          <td>$${payout.toFixed(2)}</td>
-        </tr>
-      `;
-    }
+    results.innerHTML += `
+      <tr>
+        <td>${rep.name}</td>
+        <td>$${total.toFixed(2)}</td>
+        <td>${rep.split*100}%</td>
+        <td>$${payout.toFixed(2)}</td>
+        <td><input class="bonus" type="text" id="bonusName-${rep.name}" value="${bonusData.name}"></td>
+        <td><input class="bonus" type="number" id="bonusAmount-${rep.name}" value="${bonusData.amount}" min="0"></td>
+        <td><button onclick="saveBonus('${rep.name}','${selectedMonth}',document.getElementById('bonusName-${rep.name}').value,document.getElementById('bonusAmount-${rep.name}').value)">Save</button></td>
+      </tr>
+    `;
   });
 
   document.getElementById("grandTotal").innerHTML =
-    `Total Paid Out: $${grandTotal.toFixed(2)}`;
+    `Total Paid Out (including bonuses): $${grandTotal.toFixed(2)}`;
+}
+
+// 🔹 EXPORT TO EXCEL
+function exportReport(){
+  let table = document.querySelector("table");
+  let wb = XLSX.utils.table_to_book(table, { sheet:"Payouts" });
+  XLSX.writeFile(wb, "Payout_Report.xlsx");
 }
 
 // Initialize month dropdown
