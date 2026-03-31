@@ -1,102 +1,98 @@
-function importFile(){
+function importFile() {
 
-    let file = document.getElementById("fileUpload").files[0]
-    let monthInput = document.getElementById("residualMonth").value
-    let bucket = document.getElementById("bucket").value
+    let file = document.getElementById("fileUpload").files[0;
+    let monthInput = document.getElementById("residualMonth").value;
+    let bucket = document.getElementById("bucket").value;
 
-    if(!file){ alert("Upload a file"); return }
-    if(!monthInput){ alert("Select a month"); return }
+    if (!file) { alert("Upload a file"); return; }
+    if (!monthInput) { alert("Select a month"); return; }
 
-    let parts = monthInput.split("-")
-    let selectedMonthYear = parts[1] + "/" + parts[0]
+    let parts = monthInput.split("-");
+    let selectedMonthYear = parts[1] + "/" + parts[0];
 
-    let reader = new FileReader()
+    let reader = new FileReader();
 
-    reader.onload = function(e){
+    reader.onload = function (e) {
 
-        let data = new Uint8Array(e.target.result)
-        let workbook = XLSX.read(data,{type:"array"})
-        let sheet = workbook.Sheets[workbook.SheetNames[0]]
-        let range = XLSX.utils.decode_range(sheet['!ref'])
+        let data = new Uint8Array(e.target.result);
+        let workbook = XLSX.read(data, { type: "array" });
+        let sheet = workbook.Sheets[workbook.SheetNames[0]];
+        let range = XLSX.utils.decode_range(sheet['!ref']);
 
-        let merchants = []
+        let merchants = [];
 
-        // 🔹 STORE ALL HEADERS WITH INDEXES (NO OVERWRITE)
-        let headers = []
-        for(let C=range.s.c; C<=range.e.c; C++){
-            let addr = XLSX.utils.encode_cell({r:0,c:C})
-            let cell = sheet[addr]
-            let val = cell && cell.v ? cell.v.toString().toLowerCase().trim() : ""
-            headers.push({name: val, index: C})
+        // GET HEADERS
+        let headers = [];
+        for (let C = range.s.c; C <= range.e.c; C++) {
+            let addr = XLSX.utils.encode_cell({ r: 0, c: C });
+            let cell = sheet[addr];
+            let val = cell && cell.v ? cell.v.toString().toLowerCase().trim() : "";
+            headers.push({ name: val, index: C });
         }
 
-        // 🔹 FIND REQUIRED COLUMNS
-        let residualCol = headers.find(h => h.name === "residual")?.index
-        let merchantCol = headers.find(h => h.name === "merchant number")?.index
-        let dbaCol = headers.find(h => h.name === "dba")?.index
+        // REQUIRED COLUMNS
+        let residualCol = headers.find(h => h.name === "residual")?.index;
+        let merchantCol = headers.find(h => h.name === "merchant number")?.index;
+        let dbaCol = headers.find(h => h.name === "dba")?.index;
         let repCol = headers.find(h =>
             h.name === "sales rep id" || h.name === "iworkflow sales rep number"
-        )?.index
+        )?.index;
 
-        if(residualCol === undefined){
-            alert("Residual column not found")
-            return
+        if (residualCol === undefined) {
+            alert("Residual column not found");
+            return;
         }
 
-        // 🔥 SPLIT SALES VS RETURNS BY POSITION
-        let salesIndexes = []
-        let returnIndexes = []
+        // SPLIT SALES VS RETURNS
+        let salesIndexes = [];
+        let returnIndexes = [];
 
         headers.forEach((h, i) => {
-            if(
+            if (
                 h.name.includes("mastercard") ||
                 h.name.includes("visa") ||
                 h.name.includes("discover") ||
                 h.name.includes("amex") ||
                 h.name.includes("debit") ||
                 h.name.includes("ebt")
-            ){
-                // 🔥 LEFT SIDE = SALES | RIGHT SIDE = RETURNS
-                if(i < headers.length / 2){
-                    salesIndexes.push(h.index)
+            ) {
+                if (i < headers.length / 2) {
+                    salesIndexes.push(h.index);
                 } else {
-                    returnIndexes.push(h.index)
+                    returnIndexes.push(h.index);
                 }
             }
-        })
+        });
 
-        // 🔹 LOOP ROWS
-        for(let R=1; R<=range.e.r; R++){
+        for (let R = 1; R <= range.e.r; R++) {
 
-            let getCell = (colIdx)=>{
-                let addr = XLSX.utils.encode_cell({r:R,c:colIdx})
-                return sheet[addr] ? sheet[addr].v : 0
-            }
+            let getCell = (colIdx) => {
+                let addr = XLSX.utils.encode_cell({ r: R, c: colIdx });
+                return sheet[addr] ? sheet[addr].v : 0;
+            };
 
-            let merchant = getCell(merchantCol)
-            if(!merchant) continue
+            let merchant = getCell(merchantCol);
+            if (!merchant) continue;
 
-            let dba = getCell(dbaCol)
-            let repId = getCell(repCol)
+            let dba = getCell(dbaCol);
+            let repId = getCell(repCol);
 
-            let residualVal = getCell(residualCol)
-            let residual = !isNaN(residualVal) ? Number(residualVal) : 0
+            let residualVal = getCell(residualCol);
+            let residual = !isNaN(residualVal) ? Number(residualVal) : 0;
 
-            // 🔥 SALES TOTAL
-            let salesVolume = 0
-            salesIndexes.forEach(idx=>{
-                let val = getCell(idx)
-                if(!isNaN(val)) salesVolume += Number(val)
-            })
+            let salesVolume = 0;
+            salesIndexes.forEach(idx => {
+                let val = getCell(idx);
+                if (!isNaN(val)) salesVolume += Number(val);
+            });
 
-            // 🔥 RETURNS TOTAL
-            let returnVolume = 0
-            returnIndexes.forEach(idx=>{
-                let val = getCell(idx)
-                if(!isNaN(val)) returnVolume += Number(val)
-            })
+            let returnVolume = 0;
+            returnIndexes.forEach(idx => {
+                let val = getCell(idx);
+                if (!isNaN(val)) returnVolume += Number(val);
+            });
 
-            let processingVolume = salesVolume - returnVolume
+            let processingVolume = salesVolume - returnVolume;
 
             merchants.push({
                 monthYear: selectedMonthYear,
@@ -105,23 +101,23 @@ function importFile(){
                 repId: repId,
                 total: residual,
                 volume: processingVolume
-            })
+            });
         }
 
-        let batches = JSON.parse(localStorage.getItem("residualBatches")) || []
+        let batches = JSON.parse(localStorage.getItem("residualBatches")) || [];
 
         batches.push({
             batchId: Date.now(),
             month: selectedMonthYear,
             bucket: bucket,
             merchants: merchants
-        })
+        });
 
-        localStorage.setItem("residualBatches", JSON.stringify(batches))
+        localStorage.setItem("residualBatches", JSON.stringify(batches));
 
-        loadBatches()
-        alert("Import successful")
-    }
+        loadBatches();
+        alert("Import successful");
+    };
 
-    reader.readAsArrayBuffer(file)
+    reader.readAsArrayBuffer(file);
 }
