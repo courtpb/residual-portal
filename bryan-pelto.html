@@ -47,16 +47,22 @@ th { background:#2c3e50; color:white; }
 </div>
 
 <script>
-// Bryan's Rep Codes
+// Bryan Rep Codes
 const bryanCodes = ["08040-004","08216-004","08636-003","08630-004"];
 
-// Get all merchants from localStorage
+// normalize strings for comparison
+function normalize(str){
+    if(!str) return "";
+    return str.toString().replace(/\s/g,'').replace(/-/g,'').toUpperCase();
+}
+
+// get all merchants from localStorage
 function getAllMerchants(){
     let batches = JSON.parse(localStorage.getItem("residualBatches"))||[];
     let all=[];
     batches.forEach(batch=>{
         batch.merchants.forEach(m=>{
-            // sum all sales columns under SalesVolume
+            // sum all sales columns
             let volume = 0;
             if(m.salesVolumeCols){
                 m.salesVolumeCols.forEach(v=>{
@@ -64,12 +70,14 @@ function getAllMerchants(){
                     if(!isNaN(val)) volume += val;
                 });
             }
+            // normalize month
+            let month = m.monthYear || "";
             all.push({
-                month: m.monthYear || "",
+                month: month.trim(),
                 merchant: m.merchant || "",
                 dba: m.dba || "",
-                residual: Number(m.total) || 0,
-                repId: m.repId || "",
+                residual: Number(m.total)||0,
+                repId: normalize(m.repId),
                 volume: volume
             });
         });
@@ -77,18 +85,18 @@ function getAllMerchants(){
     return all;
 }
 
-// Populate month dropdown
+// populate month dropdown
 function populateMonths(){
-    let data=getAllMerchants();
-    let months=[...new Set(data.map(d=>d.month))];
+    let data = getAllMerchants();
+    let months = [...new Set(data.map(d=>d.month))];
     months.sort((a,b)=>{
-        let [mA,yA]=a.split("/").map(Number);
-        let [mB,yB]=b.split("/").map(Number);
+        let [mA,yA] = a.split("/").map(Number);
+        let [mB,yB] = b.split("/").map(Number);
         if(yB!==yA) return yB-yA;
         return mB-mA;
     });
-    let select=document.getElementById("monthSelect");
-    select.innerHTML="";
+    let select = document.getElementById("monthSelect");
+    select.innerHTML = "";
     months.forEach(m=>{
         let opt=document.createElement("option");
         opt.value=m; opt.textContent=m;
@@ -96,27 +104,30 @@ function populateMonths(){
     });
 }
 
-// Run report
+// run report
 function runReport(){
-    let month=document.getElementById("monthSelect").value;
+    let month = document.getElementById("monthSelect").value.trim();
     if(!month) return;
 
-    let data = getAllMerchants().filter(d=>bryanCodes.includes(d.repId) && d.month===month);
+    let data = getAllMerchants().filter(d=>{
+        return bryanCodes.map(normalize).includes(d.repId) && d.month === month;
+    });
+
     if(data.length===0){
         document.getElementById("results").innerHTML = "<tr><td colspan='4'>No data found for this month</td></tr>";
         document.getElementById("totals").innerHTML = "";
         return;
     }
 
-    let totalVolume=0, totalResidual=0;
-    let results=document.getElementById("results");
-    results.innerHTML="";
+    let totalVolume = 0, totalResidual = 0;
+    let results = document.getElementById("results");
+    results.innerHTML = "";
 
     data.forEach(d=>{
         totalVolume += d.volume;
         totalResidual += d.residual;
 
-        let row=document.createElement("tr");
+        let row = document.createElement("tr");
         row.innerHTML = `<td>${d.merchant}</td><td>${d.dba}</td><td>$${d.volume.toLocaleString()}</td><td>$${d.residual.toFixed(2)}</td>`;
         results.appendChild(row);
     });
@@ -125,22 +136,24 @@ function runReport(){
         `Total Volume: $${totalVolume.toLocaleString()} | Total Residual: $${totalResidual.toFixed(2)}`;
 }
 
-// Export to Excel
+// export to Excel
 function exportReport(){
-    let month=document.getElementById("monthSelect").value;
+    let month=document.getElementById("monthSelect").value.trim();
     if(!month){ alert("Please run a report first"); return; }
-    let data = getAllMerchants().filter(d=>bryanCodes.includes(d.repId) && d.month===month);
+    let data = getAllMerchants().filter(d=>{
+        return bryanCodes.map(normalize).includes(d.repId) && d.month===month;
+    });
     if(data.length===0){ alert("No data to export"); return; }
 
-    let exportData=data.map(d=>({
-        "Merchant Number":d.merchant,
-        "DBA":d.dba,
-        "Processing Volume":d.volume,
-        "Residual":d.residual
+    let exportData = data.map(d=>({
+        "Merchant Number": d.merchant,
+        "DBA": d.dba,
+        "Processing Volume": d.volume,
+        "Residual": d.residual
     }));
 
-    let ws=XLSX.utils.json_to_sheet(exportData);
-    let wb=XLSX.utils.book_new();
+    let ws = XLSX.utils.json_to_sheet(exportData);
+    let wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Bryan Pelto");
     XLSX.writeFile(wb, `Bryan_Pelto_${month.replace("/","-")}.xlsx`);
 }
