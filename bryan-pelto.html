@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Bryan Pelto Portfolio</title>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <style>
+    body { font-family: Arial; background:#f4f6f9; margin:0; }
+    header { background:#2c3e50; color:white; padding:15px; }
+    nav { background:#34495e; padding:10px; }
+    nav a { color:white; margin-right:15px; text-decoration:none; font-weight:bold; }
+    .container { padding:25px; }
+
+    select, button { padding:10px; margin-right:10px; margin-bottom:20px; }
+
+    table {
+      width:100%;
+      border-collapse:collapse;
+      background:white;
+    }
+
+    th, td {
+      padding:10px;
+      border:1px solid #ddd;
+    }
+
+    th { background:#2c3e50; color:white; }
+
+    #totals {
+      font-weight:bold;
+      margin-bottom:15px;
+      font-size:1.1em;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+<h2>Bryan Pelto Portfolio</h2>
+</header>
+
+<nav>
+  <a href="dashboard.html">Dashboard</a>
+  <a href="residuals.html">Import Residuals</a>
+  <a href="merchant-search.html">Merchant Search</a>
+  <a href="payouts.html">Payouts</a>
+  <a href="negatives.html">Negatives</a>
+  <a href="bryan-pelto.html">Bryan Pelto</a>
+</nav>
+
+<div class="container">
+
+<label>Select Month:</label>
+<select id="monthSelect"></select>
+<button onclick="runReport()">Run Report</button>
+<button onclick="exportReport()">Export to Excel</button>
+
+<div id="totals"></div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Merchant Number</th>
+      <th>DBA</th>
+      <th>Processing Volume</th>
+      <th>Residual</th>
+    </tr>
+  </thead>
+  <tbody id="results"></tbody>
+</table>
+
+</div>
+
+<script>
+
+// 🔥 BRYAN CODES
+const bryanCodes = ["08040-004","08216-004","08636-003","08630-004"];
+
+// 🔹 GET DATA
+function getAllMerchants(){
+  let batches = JSON.parse(localStorage.getItem("residualBatches")) || [];
+  let all = [];
+
+  batches.forEach(batch => {
+    batch.merchants.forEach(m => {
+      all.push({
+        month: m.monthYear,
+        merchant: m.merchant,
+        dba: m.dba,
+        residual: Number(m.total),
+        repId: m.repId,
+        volume: Number(m.volume || 0)
+      });
+    });
+  });
+
+  return all;
+}
+
+// 🔹 MONTH DROPDOWN
+function populateMonths(){
+  let data = getAllMerchants();
+  let months = [...new Set(data.map(d => d.month))];
+
+  months.sort((a,b)=>{
+    let [yA,mA] = a.split("/").map(Number);
+    let [yB,mB] = b.split("/").map(Number);
+    if(yB !== yA) return yB - yA;
+    return mB - mA;
+  });
+
+  let select = document.getElementById("monthSelect");
+  select.innerHTML = "";
+
+  months.forEach(m=>{
+    let opt = document.createElement("option");
+    opt.value = m;
+    opt.textContent = m;
+    select.appendChild(opt);
+  });
+}
+
+// 🔹 RUN REPORT
+function runReport(){
+  let month = document.getElementById("monthSelect").value;
+  if(!month) return;
+
+  let data = getAllMerchants()
+    .filter(d => bryanCodes.includes(d.repId) && d.month === month);
+
+  let totalVolume = 0;
+  let totalResidual = 0;
+
+  let results = document.getElementById("results");
+  results.innerHTML = "";
+
+  data.forEach(d=>{
+    totalVolume += d.volume;
+    totalResidual += d.residual;
+
+    let row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${d.merchant}</td>
+      <td>${d.dba}</td>
+      <td>$${d.volume.toLocaleString()}</td>
+      <td>$${d.residual.toFixed(2)}</td>
+    `;
+    results.appendChild(row);
+  });
+
+  document.getElementById("totals").innerHTML =
+    `Total Volume: $${totalVolume.toLocaleString()} | Total Residual: $${totalResidual.toFixed(2)}`;
+}
+
+// 🔹 EXPORT
+function exportReport(){
+  let table = document.querySelector("table");
+  let wb = XLSX.utils.table_to_book(table, { sheet:"Bryan Pelto" });
+  XLSX.writeFile(wb, "Bryan_Pelto_Report.xlsx");
+}
+
+// INIT
+populateMonths();
+
+</script>
+
+</body>
+</html>
