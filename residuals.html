@@ -8,18 +8,19 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <style>
-body { font-family: Arial; background: #f4f6f9; margin: 0; }
-header { background: #2c3e50; color: white; padding: 15px; }
-nav { background: #34495e; padding: 10px; }
-nav a { color: white; margin-right: 15px; text-decoration: none; font-weight: bold; }
-.container { padding: 25px; }
-button { background: #3498db; border: none; color: white; padding: 10px 18px; cursor: pointer; border-radius: 4px; }
-button:hover { background: #2980b9; }
-table { width: 100%; border-collapse: collapse; margin-top: 25px; background: white; }
-th, td { padding: 10px; border: 1px solid #ddd; text-align: left; }
-th { background: #ecf0f1; }
+body{font-family:Arial;background:#f4f6f9;margin:0;}
+header{background:#2c3e50;color:white;padding:15px;}
+nav{background:#34495e;padding:10px;}
+nav a{color:white;margin-right:15px;text-decoration:none;font-weight:bold;}
+.container{padding:25px;}
+button{background:#3498db;border:none;color:white;padding:10px 18px;cursor:pointer;border-radius:4px;}
+button:hover{background:#2980b9;}
+table{width:100%;border-collapse:collapse;margin-top:25px;background:white;}
+th,td{padding:10px;border:1px solid #ddd;text-align:left;}
+th{background:#ecf0f1;}
 </style>
 </head>
+
 <body>
 
 <header>
@@ -39,7 +40,9 @@ th { background: #ecf0f1; }
 </nav>
 
 <div class="container">
+
 <h3>Import Residual File</h3>
+
 <label>Residual Month/Year:</label>
 <input type="month" id="residualMonth">
 <br><br>
@@ -58,6 +61,7 @@ th { background: #ecf0f1; }
 <button onclick="importFile()">Upload Residual File</button>
 
 <h3>Uploaded Files</h3>
+
 <table id="batchTable">
 <thead>
 <tr>
@@ -69,46 +73,54 @@ th { background: #ecf0f1; }
 </thead>
 <tbody></tbody>
 </table>
+
 <br>
 <button onclick="deleteSelected()">Delete Selected</button>
+
 </div>
 
 <script>
-// LOAD BATCHES
-function loadBatches() {
-    let batches = JSON.parse(localStorage.getItem("residualBatches")) || [];
-    let tbody = document.querySelector("#batchTable tbody");
-    tbody.innerHTML = "";
 
-    batches.forEach((batch, i) => {
-        let row = document.createElement("tr");
+// LOAD BATCHES
+function loadBatches(){
+    let batches = JSON.parse(localStorage.getItem("residualBatches")) || []
+
+    let tbody = document.querySelector("#batchTable tbody")
+    tbody.innerHTML=""
+
+    batches.forEach((batch,i)=>{
+        let row = document.createElement("tr")
         row.innerHTML = `
-            <td><input type="checkbox" data-index="${i}"></td>
-            <td>${batch.month}</td>
-            <td>${batch.bucket}</td>
-            <td>${batch.merchants.length}</td>`;
-        tbody.appendChild(row);
-    });
+        <td><input type="checkbox" data-index="${i}"></td>
+        <td>${batch.month}</td>
+        <td>${batch.bucket}</td>
+        <td>${batch.merchants.length}</td>`
+        tbody.appendChild(row)
+    })
 }
 
-// IMPORT FILE
+// IMPORT FILE (FIXED PROCESSING VOLUME)
 function importFile() {
+
     let file = document.getElementById("fileUpload").files[0];
     let monthInput = document.getElementById("residualMonth").value;
     let bucket = document.getElementById("bucket").value;
 
-    if (!file) { alert("Please upload a file."); return; }
-    if (!monthInput) { alert("Please select a month."); return; }
+    if (!file) { alert("Upload a file"); return; }
+    if (!monthInput) { alert("Select a month"); return; }
 
     let parts = monthInput.split("-");
-    let selectedMonthYear = parts[1] + "/" + parts[0]; // MM/YYYY
+    let selectedMonthYear = parts[1] + "/" + parts[0];
 
     let reader = new FileReader();
+
     reader.onload = function (e) {
+
         let data = new Uint8Array(e.target.result);
         let workbook = XLSX.read(data, { type: "array" });
         let sheet = workbook.Sheets[workbook.SheetNames[0]];
         let range = XLSX.utils.decode_range(sheet['!ref']);
+
         let merchants = [];
 
         // HEADERS
@@ -127,14 +139,20 @@ function importFile() {
             h.name === "sales rep id" || h.name === "iworkflow sales rep number"
         )?.index;
 
-        if (residualCol === undefined) { alert("Residual column not found"); return; }
+        if (residualCol === undefined) {
+            alert("Residual column not found");
+            return;
+        }
 
-        // Sales/Return columns
-        let salesIndexes = headers.filter(h =>
-            ["mastercard","visa","discover","amex","debit","ebt"].some(k => h.name.includes(k))
-        ).map(h => h.index);
+        // 🔹 COMBINE ALL CARD/DEBIT/EBT COLUMNS INTO TOTAL VOLUME
+        let volumeIndexes = headers
+            .filter(h => ["mastercard","visa","discover","amex","debit","ebt"]
+                .some(k => h.name.includes(k))
+            )
+            .map(h => h.index);
 
         for (let R = 1; R <= range.e.r; R++) {
+
             let getCell = (colIdx) => {
                 let addr = XLSX.utils.encode_cell({ r: R, c: colIdx });
                 let val = sheet[addr]?.v;
@@ -143,36 +161,61 @@ function importFile() {
 
             let merchant = getCell(merchantCol);
             if (!merchant) continue;
+
             let dba = getCell(dbaCol);
             let repId = getCell(repCol);
-            let residual = getCell(residualCol);
+            let residualVal = getCell(residualCol);
+            let residual = !isNaN(residualVal) ? Number(residualVal) : 0;
 
-            let processingVolume = salesIndexes.reduce((sum, idx) => sum + getCell(idx), 0);
+            // 🔹 Total processed volume = sum of all sales + returns columns
+            let processingVolume = volumeIndexes.reduce((sum, idx) => sum + getCell(idx), 0);
 
-            merchants.push({ monthYear: selectedMonthYear, merchant, dba, repId, total: residual, volume: processingVolume });
+            merchants.push({
+                monthYear: selectedMonthYear,
+                merchant: merchant,
+                dba: dba,
+                repId: repId,
+                total: residual,
+                volume: processingVolume
+            });
         }
 
         let batches = JSON.parse(localStorage.getItem("residualBatches")) || [];
-        batches.push({ batchId: Date.now(), month: selectedMonthYear, bucket, merchants });
+
+        batches.push({
+            batchId: Date.now(),
+            month: selectedMonthYear,
+            bucket: bucket,
+            merchants: merchants
+        });
+
         localStorage.setItem("residualBatches", JSON.stringify(batches));
+
         loadBatches();
         alert("Import successful");
     };
+
     reader.readAsArrayBuffer(file);
 }
 
 // DELETE
-function deleteSelected() {
-    let batches = JSON.parse(localStorage.getItem("residualBatches")) || [];
-    let checks = document.querySelectorAll("input[type=checkbox]:checked");
-    let indexes = Array.from(checks).map(c => parseInt(c.dataset.index)).sort((a,b)=>b-a);
-    indexes.forEach(i => batches.splice(i,1));
-    localStorage.setItem("residualBatches", JSON.stringify(batches));
-    loadBatches();
+function deleteSelected(){
+    let batches = JSON.parse(localStorage.getItem("residualBatches")) || []
+    let checks = document.querySelectorAll("input[type=checkbox]:checked")
+
+    let indexes = []
+    checks.forEach(c=>indexes.push(parseInt(c.dataset.index)))
+
+    indexes.sort((a,b)=>b-a)
+    indexes.forEach(i=>batches.splice(i,1))
+
+    localStorage.setItem("residualBatches", JSON.stringify(batches))
+    loadBatches()
 }
 
 // INIT
-loadBatches();
+loadBatches()
+
 </script>
 
 </body>
