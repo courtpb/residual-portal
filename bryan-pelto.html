@@ -47,22 +47,37 @@ th { background:#2c3e50; color:white; }
 </div>
 
 <script>
+// Bryan's Rep Codes
+const bryanCodes = ["08040-004","08216-004","08636-003","08630-004"];
+
+// Get all merchants from localStorage
 function getAllMerchants(){
     let batches = JSON.parse(localStorage.getItem("residualBatches"))||[];
     let all=[];
-    batches.forEach(batch=>{ batch.merchants.forEach(m=>{
-        all.push({
-            month:m.monthYear||"",
-            merchant:m.merchant||"",
-            dba:m.dba||"",
-            residual:Number(m.total)||0,
-            repId: (m.repId||"").toString().trim().replace(/\s/g,'').toUpperCase(), // normalize
-            volume:Number(m.volume)||0
+    batches.forEach(batch=>{
+        batch.merchants.forEach(m=>{
+            // sum all sales columns under SalesVolume
+            let volume = 0;
+            if(m.salesVolumeCols){
+                m.salesVolumeCols.forEach(v=>{
+                    let val = Number(v);
+                    if(!isNaN(val)) volume += val;
+                });
+            }
+            all.push({
+                month: m.monthYear || "",
+                merchant: m.merchant || "",
+                dba: m.dba || "",
+                residual: Number(m.total) || 0,
+                repId: m.repId || "",
+                volume: volume
+            });
         });
-    });});
+    });
     return all;
 }
 
+// Populate month dropdown
 function populateMonths(){
     let data=getAllMerchants();
     let months=[...new Set(data.map(d=>d.month))];
@@ -81,13 +96,12 @@ function populateMonths(){
     });
 }
 
-// 🔹 Normalize rep codes for matching
-const bryanCodes=["08040-004","08216-004","08636-003","08630-004"].map(c=>c.replace(/\s/g,'').toUpperCase());
-
+// Run report
 function runReport(){
     let month=document.getElementById("monthSelect").value;
     if(!month) return;
-    let data=getAllMerchants().filter(d=>bryanCodes.includes(d.repId) && d.month===month);
+
+    let data = getAllMerchants().filter(d=>bryanCodes.includes(d.repId) && d.month===month);
     if(data.length===0){
         document.getElementById("results").innerHTML = "<tr><td colspan='4'>No data found for this month</td></tr>";
         document.getElementById("totals").innerHTML = "";
@@ -97,26 +111,38 @@ function runReport(){
     let totalVolume=0, totalResidual=0;
     let results=document.getElementById("results");
     results.innerHTML="";
+
     data.forEach(d=>{
-        totalVolume+=d.volume;
-        totalResidual+=d.residual;
+        totalVolume += d.volume;
+        totalResidual += d.residual;
+
         let row=document.createElement("tr");
-        row.innerHTML=`<td>${d.merchant}</td><td>${d.dba}</td><td>$${d.volume.toLocaleString()}</td><td>$${d.residual.toFixed(2)}</td>`;
+        row.innerHTML = `<td>${d.merchant}</td><td>${d.dba}</td><td>$${d.volume.toLocaleString()}</td><td>$${d.residual.toFixed(2)}</td>`;
         results.appendChild(row);
     });
-    document.getElementById("totals").innerHTML=`Total Volume: $${totalVolume.toLocaleString()} | Total Residual: $${totalResidual.toFixed(2)}`;
+
+    document.getElementById("totals").innerHTML =
+        `Total Volume: $${totalVolume.toLocaleString()} | Total Residual: $${totalResidual.toFixed(2)}`;
 }
 
+// Export to Excel
 function exportReport(){
     let month=document.getElementById("monthSelect").value;
     if(!month){ alert("Please run a report first"); return; }
-    let data=getAllMerchants().filter(d=>bryanCodes.includes(d.repId) && d.month===month);
+    let data = getAllMerchants().filter(d=>bryanCodes.includes(d.repId) && d.month===month);
     if(data.length===0){ alert("No data to export"); return; }
-    let exportData=data.map(d=>({"Merchant Number":d.merchant,"DBA":d.dba,"Processing Volume":d.volume,"Residual":d.residual}));
+
+    let exportData=data.map(d=>({
+        "Merchant Number":d.merchant,
+        "DBA":d.dba,
+        "Processing Volume":d.volume,
+        "Residual":d.residual
+    }));
+
     let ws=XLSX.utils.json_to_sheet(exportData);
     let wb=XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb,ws,"Bryan Pelto");
-    XLSX.writeFile(wb,`Bryan_Pelto_${month.replace("/","-")}.xlsx`);
+    XLSX.utils.book_append_sheet(wb, ws, "Bryan Pelto");
+    XLSX.writeFile(wb, `Bryan_Pelto_${month.replace("/","-")}.xlsx`);
 }
 
 populateMonths();
