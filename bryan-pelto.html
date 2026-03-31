@@ -62,10 +62,10 @@ function getAllMerchants(){
     let all=[];
     batches.forEach(batch=>{
         batch.merchants.forEach(m=>{
-            // sum all sales columns
+            // sum all sales columns from SalesVolume
             let volume = 0;
-            if(m.salesVolumeCols){
-                m.salesVolumeCols.forEach(v=>{
+            if(m.SalesVolume){
+                m.SalesVolume.forEach(v=>{
                     let val = Number(v);
                     if(!isNaN(val)) volume += val;
                 });
@@ -121,7 +121,7 @@ function runReport(){
 
     let totalVolume = 0, totalResidual = 0;
     let results = document.getElementById("results");
-    results.innerHTML = "";
+    results.innerHTML="";
 
     data.forEach(d=>{
         totalVolume += d.volume;
