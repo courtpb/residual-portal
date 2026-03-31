@@ -4,8 +4,9 @@
   <meta charset="UTF-8">
   <title>Bryan Pelto Portfolio</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
   <style>
-    body { font-family: Arial; background:#f4f6f9; margin:0; }
+    body { font-family: Arial; background:#f4f6f9; margin:0; color:#000; }
     header { background:#2c3e50; color:white; padding:15px; }
     nav { background:#34495e; padding:10px; }
     nav a { color:white; margin-right:15px; text-decoration:none; font-weight:bold; }
@@ -17,11 +18,13 @@
       width:100%;
       border-collapse:collapse;
       background:white;
+      color:#000;
     }
 
     th, td {
       padding:10px;
       border:1px solid #ddd;
+      color:#000;
     }
 
     th { background:#2c3e50; color:white; }
@@ -74,7 +77,7 @@
 
 <script>
 
-// 🔥 BRYAN CODES
+// 🔥 BRYAN REP CODES
 const bryanCodes = ["08040-004","08216-004","08636-003","08630-004"];
 
 // 🔹 GET DATA
@@ -85,12 +88,12 @@ function getAllMerchants(){
   batches.forEach(batch => {
     batch.merchants.forEach(m => {
       all.push({
-        month: m.monthYear,
-        merchant: m.merchant,
-        dba: m.dba,
-        residual: Number(m.total),
-        repId: m.repId,
-        volume: Number(m.volume || 0)
+        month: m.monthYear || "",
+        merchant: m.merchant || "",
+        dba: m.dba || "",
+        residual: Number(m.total) || 0,
+        repId: m.repId || "",
+        volume: Number(m.volume) || 0
       });
     });
   });
@@ -98,14 +101,14 @@ function getAllMerchants(){
   return all;
 }
 
-// 🔹 MONTH DROPDOWN
+// 🔹 POPULATE MONTHS (MOST RECENT FIRST)
 function populateMonths(){
   let data = getAllMerchants();
   let months = [...new Set(data.map(d => d.month))];
 
   months.sort((a,b)=>{
-    let [yA,mA] = a.split("/").map(Number);
-    let [yB,mB] = b.split("/").map(Number);
+    let [mA,yA] = a.split("/").map(Number);
+    let [mB,yB] = b.split("/").map(Number);
     if(yB !== yA) return yB - yA;
     return mB - mA;
   });
@@ -153,11 +156,34 @@ function runReport(){
     `Total Volume: $${totalVolume.toLocaleString()} | Total Residual: $${totalResidual.toFixed(2)}`;
 }
 
-// 🔹 EXPORT
+// 🔹 EXPORT TO EXCEL (CLEAN DATA EXPORT)
 function exportReport(){
-  let table = document.querySelector("table");
-  let wb = XLSX.utils.table_to_book(table, { sheet:"Bryan Pelto" });
-  XLSX.writeFile(wb, "Bryan_Pelto_Report.xlsx");
+  let month = document.getElementById("monthSelect").value;
+  if(!month){
+    alert("Please run a report first");
+    return;
+  }
+
+  let data = getAllMerchants()
+    .filter(d => bryanCodes.includes(d.repId) && d.month === month);
+
+  if(data.length === 0){
+    alert("No data to export");
+    return;
+  }
+
+  let exportData = data.map(d => ({
+    "Merchant Number": d.merchant,
+    "DBA": d.dba,
+    "Processing Volume": d.volume,
+    "Residual": d.residual
+  }));
+
+  let ws = XLSX.utils.json_to_sheet(exportData);
+  let wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Bryan Pelto");
+
+  XLSX.writeFile(wb, `Bryan_Pelto_${month.replace("/","-")}.xlsx`);
 }
 
 // INIT
