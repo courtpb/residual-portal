@@ -56,7 +56,7 @@ function getAllMerchants(){
             merchant:m.merchant||"",
             dba:m.dba||"",
             residual:Number(m.total)||0,
-            repId:m.repId||"",
+            repId: (m.repId||"").toString().trim().replace(/\s/g,'').toUpperCase(), // normalize
             volume:Number(m.volume)||0
         });
     });});
@@ -81,12 +81,19 @@ function populateMonths(){
     });
 }
 
-const bryanCodes=["08040-004","08216-004","08636-003","08630-004"];
+// 🔹 Normalize rep codes for matching
+const bryanCodes=["08040-004","08216-004","08636-003","08630-004"].map(c=>c.replace(/\s/g,'').toUpperCase());
 
 function runReport(){
     let month=document.getElementById("monthSelect").value;
     if(!month) return;
-    let data=getAllMerchants().filter(d=>bryanCodes.includes(d.repId)&&d.month===month);
+    let data=getAllMerchants().filter(d=>bryanCodes.includes(d.repId) && d.month===month);
+    if(data.length===0){
+        document.getElementById("results").innerHTML = "<tr><td colspan='4'>No data found for this month</td></tr>";
+        document.getElementById("totals").innerHTML = "";
+        return;
+    }
+
     let totalVolume=0, totalResidual=0;
     let results=document.getElementById("results");
     results.innerHTML="";
@@ -103,7 +110,7 @@ function runReport(){
 function exportReport(){
     let month=document.getElementById("monthSelect").value;
     if(!month){ alert("Please run a report first"); return; }
-    let data=getAllMerchants().filter(d=>bryanCodes.includes(d.repId)&&d.month===month);
+    let data=getAllMerchants().filter(d=>bryanCodes.includes(d.repId) && d.month===month);
     if(data.length===0){ alert("No data to export"); return; }
     let exportData=data.map(d=>({"Merchant Number":d.merchant,"DBA":d.dba,"Processing Volume":d.volume,"Residual":d.residual}));
     let ws=XLSX.utils.json_to_sheet(exportData);
