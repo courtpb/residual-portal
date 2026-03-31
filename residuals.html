@@ -4,9 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Import Residuals</title>
-
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-
 <style>
 body{font-family:Arial;background:#f4f6f9;margin:0;}
 header{background:#2c3e50;color:white;padding:15px;}
@@ -20,12 +18,9 @@ th,td{padding:10px;border:1px solid #ddd;text-align:left;}
 th{background:#ecf0f1;}
 </style>
 </head>
-
 <body>
 
-<header>
-<h2>Residual Portal</h2>
-</header>
+<header><h2>Residual Portal</h2></header>
 
 <nav>
 <a href="dashboard.html">Dashboard</a>
@@ -40,7 +35,6 @@ th{background:#ecf0f1;}
 </nav>
 
 <div class="container">
-
 <h3>Import Residual File</h3>
 
 <label>Residual Month/Year:</label>
@@ -61,49 +55,39 @@ th{background:#ecf0f1;}
 <button onclick="importFile()">Upload Residual File</button>
 
 <h3>Uploaded Files</h3>
-
 <table id="batchTable">
 <thead>
-<tr>
-<th>Select</th>
-<th>Month</th>
-<th>Bucket</th>
-<th>Merchants</th>
-</tr>
+<tr><th>Select</th><th>Month</th><th>Bucket</th><th>Merchants</th></tr>
 </thead>
 <tbody></tbody>
 </table>
-
 <br>
 <button onclick="deleteSelected()">Delete Selected</button>
-
 </div>
 
 <script>
-
-// LOAD BATCHES
+// Load existing batches
 function loadBatches(){
-    let batches = JSON.parse(localStorage.getItem("residualBatches")) || []
-    let tbody = document.querySelector("#batchTable tbody")
-    tbody.innerHTML=""
+    let batches = JSON.parse(localStorage.getItem("residualBatches")) || [];
+    let tbody = document.querySelector("#batchTable tbody");
+    tbody.innerHTML = "";
     batches.forEach((batch,i)=>{
-        let row = document.createElement("tr")
-        row.innerHTML = `
-        <td><input type="checkbox" data-index="${i}"></td>
-        <td>${batch.month}</td>
-        <td>${batch.bucket}</td>
-        <td>${batch.merchants.length}</td>`
-        tbody.appendChild(row)
-    })
+        let row = document.createElement("tr");
+        row.innerHTML = `<td><input type="checkbox" data-index="${i}"></td>
+                         <td>${batch.month}</td>
+                         <td>${batch.bucket}</td>
+                         <td>${batch.merchants.length}</td>`;
+        tbody.appendChild(row);
+    });
 }
 
-// IMPORT FILE
-function importFile() {
+// Import file
+function importFile(){
     let file = document.getElementById("fileUpload").files[0];
     let monthInput = document.getElementById("residualMonth").value;
     let bucket = document.getElementById("bucket").value;
-    if (!file) { alert("Upload a file"); return; }
-    if (!monthInput) { alert("Select a month"); return; }
+    if(!file){ alert("Upload a file"); return; }
+    if(!monthInput){ alert("Select a month"); return; }
 
     let parts = monthInput.split("-");
     let selectedMonthYear = parts[1] + "/" + parts[0];
@@ -111,50 +95,40 @@ function importFile() {
 
     reader.onload = function(e){
         let data = new Uint8Array(e.target.result);
-        let workbook = XLSX.read(data, { type: "array" });
+        let workbook = XLSX.read(data,{type:"array"});
         let sheet = workbook.Sheets[workbook.SheetNames[0]];
         let range = XLSX.utils.decode_range(sheet['!ref']);
 
-        // USE ROW 2 FOR HEADERS
+        // Row 2 (r:1) = actual headers
         let headers = [];
-        for (let C = range.s.c; C <= range.e.c; C++) {
-            let addr = XLSX.utils.encode_cell({r:1,c:C}); // Row 2 = r:1
-            let cell = sheet[addr];
-            let val = cell && cell.v ? cell.v.toString().toLowerCase().trim() : "";
-            headers.push({ name: val, index: C });
+        for(let C=range.s.c; C<=range.e.c; C++){
+            let addr = XLSX.utils.encode_cell({r:1,c:C});
+            let val = sheet[addr]?.v?.toString().toLowerCase().trim() || "";
+            headers.push({name:val,index:C});
         }
 
-        let merchantCol = headers.find(h => h.name.includes("merchant"))?.index;
-        let dbaCol = headers.find(h => h.name.includes("merchant name") || h.name.includes("dba"))?.index;
-        let residualCol = headers.find(h => h.name.includes("residual"))?.index;
-        let repCol = headers.find(h => h.name.includes("sales rep id") || h.name.includes("iworkflow sales rep number"))?.index;
+        let merchantCol = headers.find(h=>h.name.includes("merchant number"))?.index;
+        let dbaCol = headers.find(h=>h.name.includes("merchant name") || h.name.includes("dba"))?.index;
+        let residualCol = headers.find(h=>h.name.includes("residual"))?.index;
+        let repCol = headers.find(h=>h.name.includes("sales rep id") || h.name.includes("iworkflow sales rep number"))?.index;
 
-        if (residualCol === undefined) { alert("Residual column not found"); return; }
+        if(residualCol===undefined){ alert("Residual column not found"); return; }
 
-        const volumeColumnNames = [
-          "mastercard", "visa", "discover_acquiring", "amex_opt_blue", "ebt",
-          "accel debit", "interlink debit", "maestro debit", "pulse debit", "star debit"
-        ];
-
-        let volumeIndexes = headers
-          .map((h,i)=>({name:h.name,index:i}))
-          .filter(h=>volumeColumnNames.includes(h.name.toLowerCase()))
-          .map(h=>h.index);
+        const volumeColumns = ["mastercard","visa","discover_acquiring","amex_opt_blue","ebt",
+                               "accel debit","interlink debit","maestro debit","pulse debit","star debit"];
+        let volumeIndexes = headers.filter(h=>volumeColumns.includes(h.name)).map(h=>h.index);
 
         let merchants = [];
-
-        for (let R=2; R<=range.e.r; R++){ // Start row 3 for data
-            let getCell = (colIdx)=>{
-                let addr = XLSX.utils.encode_cell({r:R,c:colIdx});
+        for(let R=2; R<=range.e.r; R++){
+            let getCell = c=>{
+                let addr = XLSX.utils.encode_cell({r:R,c:c});
                 let val = sheet[addr]?.v;
-                if (!val) return 0;
+                if(!val) return 0;
                 if(typeof val==="string") val = val.replace(/,/g,'');
                 return Number(val)||0;
             };
-
-            let merchant = sheet[XLSX.utils.encode_cell({r:R,c:merchantCol})]?.v || "";
+            let merchant = sheet[XLSX.utils.encode_cell({r:R,c:merchantCol})]?.v;
             if(!merchant) continue;
-
             let dba = sheet[XLSX.utils.encode_cell({r:R,c:dbaCol})]?.v || "";
             let residual = getCell(residualCol);
             let volume = volumeIndexes.reduce((sum,i)=>sum+getCell(i),0);
@@ -162,18 +136,18 @@ function importFile() {
             repIdVal = repIdVal ? repIdVal.toString().trim().replace(/\s/g,'') : "";
 
             merchants.push({
-                monthYear: selectedMonthYear,
-                merchant: merchant,
-                dba: dba,
-                repId: repIdVal,
-                total: residual,
-                volume: volume
+                monthYear:selectedMonthYear,
+                merchant:merchant,
+                dba:dba,
+                repId:repIdVal,
+                total:residual,
+                volume:volume
             });
         }
 
-        let batches = JSON.parse(localStorage.getItem("residualBatches")) || [];
-        batches.push({ batchId: Date.now(), month: selectedMonthYear, bucket: bucket, merchants: merchants });
-        localStorage.setItem("residualBatches", JSON.stringify(batches));
+        let batches = JSON.parse(localStorage.getItem("residualBatches"))||[];
+        batches.push({batchId:Date.now(),month:selectedMonthYear,bucket:bucket,merchants:merchants});
+        localStorage.setItem("residualBatches",JSON.stringify(batches));
         loadBatches();
         alert("Import successful");
     };
@@ -181,20 +155,18 @@ function importFile() {
     reader.readAsArrayBuffer(file);
 }
 
-// DELETE
+// Delete selected
 function deleteSelected(){
-    let batches = JSON.parse(localStorage.getItem("residualBatches")) || []
-    let checks = document.querySelectorAll("input[type=checkbox]:checked")
-    let indexes = []
-    checks.forEach(c=>indexes.push(parseInt(c.dataset.index)))
-    indexes.sort((a,b)=>b-a)
-    indexes.forEach(i=>batches.splice(i,1))
-    localStorage.setItem("residualBatches", JSON.stringify(batches))
-    loadBatches()
+    let batches = JSON.parse(localStorage.getItem("residualBatches"))||[];
+    let checks = document.querySelectorAll("input[type=checkbox]:checked");
+    let indexes = Array.from(checks).map(c=>parseInt(c.dataset.index));
+    indexes.sort((a,b)=>b-a).forEach(i=>batches.splice(i,1));
+    localStorage.setItem("residualBatches",JSON.stringify(batches));
+    loadBatches();
 }
 
-// INIT
-loadBatches()
+// Init
+loadBatches();
 </script>
 </body>
 </html>
