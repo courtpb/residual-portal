@@ -99,7 +99,7 @@ function loadBatches(){
     })
 }
 
-// IMPORT FILE (FIXED PROCESSING VOLUME)
+// IMPORT FILE
 function importFile() {
 
     let file = document.getElementById("fileUpload").files[0];
@@ -144,37 +144,44 @@ function importFile() {
             return;
         }
 
-        // 🔹 COMBINE ALL CARD/DEBIT/EBT COLUMNS INTO TOTAL VOLUME
+        // DETECT ALL SALES + RETURN COLUMNS
         let volumeIndexes = headers
             .filter(h => ["mastercard","visa","discover","amex","debit","ebt"]
                 .some(k => h.name.includes(k))
             )
             .map(h => h.index);
 
+        console.log("Volume columns detected:", volumeIndexes.map(i=>headers[i].name));
+
         for (let R = 1; R <= range.e.r; R++) {
 
             let getCell = (colIdx) => {
                 let addr = XLSX.utils.encode_cell({ r: R, c: colIdx });
                 let val = sheet[addr]?.v;
-                return val && !isNaN(val) ? Number(val) : 0;
+                if (!val) return 0;
+                if (typeof val === "string") val = val.replace(/,/g,''); // remove commas
+                return Number(val) || 0;
             };
 
             let merchant = getCell(merchantCol);
             if (!merchant) continue;
 
             let dba = getCell(dbaCol);
-            let repId = getCell(repCol);
+
+            let repIdVal = sheet[XLSX.utils.encode_cell({ r: R, c: repCol })]?.v;
+            repIdVal = repIdVal ? repIdVal.toString().trim() : "";
+
             let residualVal = getCell(residualCol);
             let residual = !isNaN(residualVal) ? Number(residualVal) : 0;
 
-            // 🔹 Total processed volume = sum of all sales + returns columns
+            // SUM ALL SALES + RETURNS
             let processingVolume = volumeIndexes.reduce((sum, idx) => sum + getCell(idx), 0);
 
             merchants.push({
                 monthYear: selectedMonthYear,
                 merchant: merchant,
                 dba: dba,
-                repId: repId,
+                repId: repIdVal,
                 total: residual,
                 volume: processingVolume
             });
