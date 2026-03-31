@@ -115,15 +115,15 @@ function importFile() {
         let sheet = workbook.Sheets[workbook.SheetNames[0]];
         let range = XLSX.utils.decode_range(sheet['!ref']);
 
+        // USE ROW 2 FOR HEADERS
         let headers = [];
         for (let C = range.s.c; C <= range.e.c; C++) {
-            let addr = XLSX.utils.encode_cell({r:0,c:C});
+            let addr = XLSX.utils.encode_cell({r:1,c:C}); // Row 2 = r:1
             let cell = sheet[addr];
             let val = cell && cell.v ? cell.v.toString().toLowerCase().trim() : "";
             headers.push({ name: val, index: C });
         }
 
-        // Columns
         let merchantCol = headers.find(h => h.name.includes("merchant"))?.index;
         let dbaCol = headers.find(h => h.name.includes("merchant name") || h.name.includes("dba"))?.index;
         let residualCol = headers.find(h => h.name.includes("residual"))?.index;
@@ -131,7 +131,6 @@ function importFile() {
 
         if (residualCol === undefined) { alert("Residual column not found"); return; }
 
-        // Hardcoded volume columns
         const volumeColumnNames = [
           "mastercard", "visa", "discover_acquiring", "amex_opt_blue", "ebt",
           "accel debit", "interlink debit", "maestro debit", "pulse debit", "star debit"
@@ -144,7 +143,7 @@ function importFile() {
 
         let merchants = [];
 
-        for (let R=1; R<=range.e.r; R++){
+        for (let R=2; R<=range.e.r; R++){ // Start row 3 for data
             let getCell = (colIdx)=>{
                 let addr = XLSX.utils.encode_cell({r:R,c:colIdx});
                 let val = sheet[addr]?.v;
@@ -157,11 +156,8 @@ function importFile() {
             if(!merchant) continue;
 
             let dba = sheet[XLSX.utils.encode_cell({r:R,c:dbaCol})]?.v || "";
-
             let residual = getCell(residualCol);
-
             let volume = volumeIndexes.reduce((sum,i)=>sum+getCell(i),0);
-
             let repIdVal = sheet[XLSX.utils.encode_cell({r:R,c:repCol})]?.v;
             repIdVal = repIdVal ? repIdVal.toString().trim().replace(/\s/g,'') : "";
 
