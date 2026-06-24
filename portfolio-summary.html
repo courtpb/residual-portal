@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Portfolio Summary</title>
+
+<style>
+
+body{
+    font-family:Arial;
+    background:#f4f6f9;
+    margin:0;
+}
+
+header{
+    background:#2c3e50;
+    color:white;
+    padding:15px;
+}
+
+nav{
+    background:#34495e;
+    padding:10px;
+}
+
+nav a{
+    color:white;
+    margin-right:15px;
+    text-decoration:none;
+    font-weight:bold;
+}
+
+.container{
+    padding:25px;
+}
+
+.card-container{
+    display:flex;
+    gap:20px;
+    margin-bottom:25px;
+}
+
+.card{
+    background:white;
+    padding:20px;
+    border-radius:8px;
+    box-shadow:0 2px 5px rgba(0,0,0,.15);
+    min-width:220px;
+}
+
+.card h3{
+    margin:0;
+}
+
+.card-value{
+    font-size:24px;
+    font-weight:bold;
+    margin-top:10px;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    background:white;
+}
+
+th,td{
+    border:1px solid #ddd;
+    padding:10px;
+    text-align:left;
+}
+
+th{
+    background:#2c3e50;
+    color:white;
+}
+
+button{
+    padding:10px 15px;
+    cursor:pointer;
+    margin-bottom:20px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<header>
+<h2>Portfolio Summary</h2>
+</header>
+
+<nav>
+  <a href="dashboard.html">Dashboard</a>
+  <a href="residuals.html">Import Residuals</a>
+  <a href="my-residuals.html">My Residuals</a>
+  <a href="merchant-search.html">Merchant Search</a>
+  <a href="payouts.html">Payouts</a>
+  <a href="negatives.html">Negatives</a>
+  <a href="users.html">Users</a>
+  <a href="portfolio-summary.html">Portfolio Summary</a>
+  <a href="index.html">Logout</a>
+</nav>
+
+<div class="container">
+
+<div class="card-container">
+
+<div class="card">
+<h3>Total Residuals</h3>
+<div id="totalResiduals" class="card-value">$0.00</div>
+</div>
+
+<div class="card">
+<h3>Total Volume</h3>
+<div id="totalVolume" class="card-value">$0.00</div>
+</div>
+
+<div class="card">
+<h3>Total Accounts</h3>
+<div id="totalAccounts" class="card-value">0</div>
+</div>
+
+</div>
+
+<button onclick="exportSummary()">Export Summary CSV</button>
+
+<table>
+
+<thead>
+<tr>
+<th>Month</th>
+<th>Total Residual</th>
+<th>Total Volume</th>
+<th>Total Accounts</th>
+<th>Avg Residual</th>
+</tr>
+</thead>
+
+<tbody id="summaryTable"></tbody>
+
+</table>
+
+</div>
+
+<script>
+
+function getAllMerchants(){
+
+    let batches =
+        JSON.parse(localStorage.getItem("residualBatches")) || [];
+
+    let all = [];
+
+    batches.forEach(batch=>{
+
+        batch.merchants.forEach(m=>{
+
+            all.push({
+
+                month: m.monthYear || "",
+
+                residual:
+                    Number(m.total || 0),
+
+                volume:
+                    Number(m.salesVolume || 0),
+
+                merchant:
+                    m.merchantNumber || m.mid || ""
+
+            });
+
+        });
+
+    });
+
+    return all;
+}
+
+function buildSummary(){
+
+    let data = getAllMerchants();
+
+    let monthly = {};
+
+    let totalResiduals = 0;
+    let totalVolume = 0;
+
+    data.forEach(row=>{
+
+        if(!monthly[row.month]){
+
+            monthly[row.month] = {
+
+                residual:0,
+                volume:0,
+                merchants:new Set()
+
+            };
+
+        }
+
+        monthly[row.month].residual += row.residual;
+        monthly[row.month].volume += row.volume;
+
+        monthly[row.month].merchants.add(
+            row.merchant
+        );
+
+        totalResiduals += row.residual;
+        totalVolume += row.volume;
+
+    });
+
+    document.getElementById("totalResiduals").innerHTML =
+        "$" + totalResiduals.toLocaleString(undefined,{minimumFractionDigits:2});
+
+    document.getElementById("totalVolume").innerHTML =
+        "$" + totalVolume.toLocaleString(undefined,{minimumFractionDigits:2});
+
+    let uniqueAccounts =
+        new Set(data.map(x=>x.merchant));
+
+    document.getElementById("totalAccounts").innerHTML =
+        uniqueAccounts.size;
+
+    let html = "";
+
+    Object.keys(monthly)
+        .sort()
+        .forEach(month=>{
+
+            let r =
+                monthly[month].residual;
+
+            let v =
+                monthly[month].volume;
+
+            let a =
+                monthly[month].merchants.size;
+
+            let avg =
+                a > 0 ? r / a : 0;
+
+            html += `
+            <tr>
+                <td>${month}</td>
+                <td>$${r.toFixed(2)}</td>
+                <td>$${v.toFixed(2)}</td>
+                <td>${a}</td>
+                <td>$${avg.toFixed(2)}</td>
+            </tr>
+            `;
+        });
+
+    document.getElementById("summaryTable").innerHTML =
+        html;
+}
+
+function exportSummary(){
+
+    let table =
+        document.querySelector("table");
+
+    let rows =
+        table.querySelectorAll("tr");
+
+    let csv = [];
+
+    rows.forEach(row=>{
+
+        let cols =
+            row.querySelectorAll("th,td");
+
+        let line = [];
+
+        cols.forEach(col=>{
+            line.push(col.innerText);
+        });
+
+        csv.push(line.join(","));
+
+    });
+
+    let blob =
+        new Blob([csv.join("\n")],
+        {type:"text/csv"});
+
+    let a =
+        document.createElement("a");
+
+    a.href =
+        URL.createObjectURL(blob);
+
+    a.download =
+        "portfolio-summary.csv";
+
+    a.click();
+}
+
+buildSummary();
+
+</script>
+
+</body>
+</html>
